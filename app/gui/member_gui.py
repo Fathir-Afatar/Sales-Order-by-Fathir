@@ -240,11 +240,25 @@ def buat_frame_member(parent):
         "ranting": "Ranting",
 
     }
-    tree = ttk.Treeview(frame, columns=columns, show="headings")
+    frame_treeview = tk.Frame(frame)
+    frame_treeview.pack(fill="both", expand=True, padx=10, pady=10)
+    
+    frame_treeview.grid_rowconfigure(0, weight=1)
+    frame_treeview.grid_columnconfigure(0, weight=1)
+
+    tree = ttk.Treeview(frame_treeview, columns=columns, show="headings")
     for col in columns:
         tree.heading(col, text=column_labels[col])
-        tree.column(col, width=130)    
-    tree.pack(fill="both", expand=True, pady=10)
+        tree.column(col, width=130) 
+    
+    scroll_y = ttk.Scrollbar(frame_treeview, orient="vertical", command=tree.yview)
+    scroll_x = ttk.Scrollbar(frame_treeview, orient="horizontal", command=tree.xview)
+    tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)  
+    
+    tree.grid(row=0, column=0, sticky="nsew")
+    scroll_y.grid(row=0, column=1, sticky="ns")
+    scroll_x.grid(row=1, column=0, sticky="ew")
+
     tree.bind("<<TreeviewSelect>>", on_tree_select)
 
     def cari_member_gui():
