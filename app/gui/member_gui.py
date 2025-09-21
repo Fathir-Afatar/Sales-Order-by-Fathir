@@ -9,7 +9,7 @@ def refresh_tree():
     tree.delete(*tree.get_children())
     for m in semua_member():
         tree.insert("", tk.END, iid=m["id_member"], values=(
-            m["kode_member"], m["nama"], m["no_hp"], m["alamat"], m["tipe"], m["ranting"]
+            m["id_member"],m["kode_member"], m["nama"], m["no_hp"], m["alamat"], m["tipe"], m["ranting"]
         ))
     print(f"[DEBUG] tree inserted: ID = {m['id_member']}, values ={(m['kode_member'], m['nama'], m['no_hp'], m['alamat'], m['tipe'], m['ranting'])}")
 
@@ -229,8 +229,9 @@ def buat_frame_member(parent):
 
     # ____________ Treeview Daftar Member
    
-    columns = ("kode_member", "nama", "nomor", "alamat", "tipe", "ranting", )
+    columns = ("id_member", "kode_member", "nama", "nomor", "alamat", "tipe", "ranting", )
     column_labels = {
+        "id_member": "ID",
         "kode_member": "Kode Member",
         "nama": "Nama",
         "nomor": "Nomor HP",
