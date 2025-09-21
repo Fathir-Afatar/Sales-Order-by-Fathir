@@ -14,9 +14,13 @@ def buat_frame_supplier(parent):
     frame_top = tk.Frame(frame, bg="#f4f4f4")
     frame_top.pack(pady=10)
 
+    # Untuk Scroll
+    frame_treeview = tk.Frame(frame, bg="#f4f4f4")
+    frame_treeview.pack(fill="both", expand=True, padx=10, pady=10)
+
     # Treview lebih dulu untuk lambda
 
-    tree = ttk.Treeview(frame, columns=("id", "nama", "alamat", "no_hp"), show="headings")
+    tree = ttk.Treeview(frame_treeview, columns=("id", "nama", "alamat", "no_hp"), show="headings")
     tree.heading("id", text="ID")
     tree.heading("nama", text="Nama Supplier")
     tree.heading("alamat", text="Alamat")
@@ -25,6 +29,10 @@ def buat_frame_supplier(parent):
     tree.column("nama", width=200)
     tree.column("alamat", width=250)
     tree.column("no_hp", width=150)
+
+    scroll_y = ttk.Scrollbar(frame_treeview, orient="vertical", command=tree.yview)
+    scroll_x = ttk.Scrollbar(frame_treeview, orient="horizontal", command=tree.xview)
+    tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
 
     tk.Button(frame_top, text="Tambah Supplier", command=lambda: buka_form_tambah_supplier(tree, frame)).pack(side="left", padx=5)
 
@@ -36,8 +44,13 @@ def buat_frame_supplier(parent):
     tk.Button(frame_top, text="Cari", command=lambda: filter_supplier(tree, entry_nama)).pack(side="left", padx=5)
     tk.Button(frame_top, text="Reset", command=lambda: refresh_tree(tree)).pack(side="left", padx=5)
 
-    # Tampilkan Treeview
-    tree.pack(fill="both", expand=True, padx=10, pady=10)
+    # Tampilkan Treeview + scroll
+    tree.grid(row=0, column=0, sticky="nsew")
+    scroll_y.grid(row=0, column=1, sticky="ns")
+    scroll_x.grid(row=1, column=0, sticky="ew")
+
+    frame_treeview.grid_rowconfigure(0, weight=1)
+    frame_treeview.grid_columnconfigure(0, weight=1)
 
     # Frame Bawah: Edit + Hapus
 
