@@ -8,9 +8,9 @@ def get_database_path():
         base_path = sys._MEIPASS
     else:
         # Saat dijalankan dari source code
-        base_path = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.path.abspath(".")
     # Arahkan ke folder data/pos.db
-    return os.path.join(base_path, "..", "..", "data", "pos.db")
+    return os.path.join(base_path, "data", "pos.db")
 
 def get_connection():
     db_path = get_database_path()
