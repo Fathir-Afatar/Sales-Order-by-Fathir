@@ -24,6 +24,7 @@ _"Entah kenapa aku ingin memajang hasil printer kecil ini sebagai langkah pertam
 -[x] Cetak ulang nota dari tab rincian
 -[x] Integrasi GUI Sukses - 19 September 2025
     Setelah debugging bertahap, semua modul berhasul disatukan ke dalam satu aplikasi utama. Navigasi lancar, layout rapi, dan struktur modular siap untuk pengembangan lanjutan.
+-[ ] Aplikasi Pertama dari Pyinstaller (22 September 2025)
 -[ ] Migrasi ke web (fase berikutnya)
 
 
