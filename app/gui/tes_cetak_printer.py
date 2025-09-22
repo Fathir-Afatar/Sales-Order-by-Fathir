@@ -1,4 +1,7 @@
-from escpos.printer import Usb
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from local_escpos.printer import Usb
 
 p = Usb(0x28e9, 0x0289)
 p.text("Langkah Pertama: Python x POS80 Thermal Printer\n")

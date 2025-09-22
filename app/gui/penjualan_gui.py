@@ -2,12 +2,18 @@ import tkinter as tk
 from datetime import datetime
 import csv
 import sqlite3
-from escpos.printer import Usb
+#from escpos.printer import Usb
 from tkinter import ttk, messagebox, Listbox
 from app.core.penjualan_core import proses_penjualan, get_nama_pembeli
 from app.core.product_core import semua_produk
 from app.constants.config import get_connection
 from app.core.member_core import semua_member
+
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+from local_escpos.printer import Usb
+
 
 transaksi_terakhir = None
 
@@ -446,6 +452,7 @@ def buat_frame_penjualan(parent):
             # Kirim ke printer thermal
             try:
                 p = Usb(0x28e9, 0x0289) # VendorID dan ProcutID dari printer
+                p.open()
                 p.text(nota_str)
                 p.cut()
                 print("[INFO] Nota berhasil dicetak ke printer thermal.")

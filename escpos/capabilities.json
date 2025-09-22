@@ -1,0 +1,10 @@
+{
+  "name": "Generic Thermal Printer",
+  "vendor": "Generic",
+  "model": "POS80",
+  "features": {
+    "font": ["A", "B"],
+    "barcode": true,
+    "image": true
+  }
+}

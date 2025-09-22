@@ -26,6 +26,9 @@ _internal/
 .DS_Store
 Thumbs.db
 
+# Folder python-escpos dari clone
+python-escpos/
+
 # IDE configs
 .vscode/
 .idea/
