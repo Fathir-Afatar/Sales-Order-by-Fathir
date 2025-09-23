@@ -2,6 +2,7 @@ import tkinter as tk
 from datetime import datetime
 import csv
 import sqlite3
+import time
 #from escpos.printer import Usb
 from tkinter import ttk, messagebox, Listbox
 from app.core.penjualan_core import proses_penjualan, get_nama_pembeli
@@ -247,9 +248,9 @@ def buat_frame_penjualan(parent):
     def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ongkir=0, tanggal = None):
         nota = ""
         nota += "=" * LEBAR_BARIS + "\n"
-        nota += "       KOPANA YOGYAKARTA\n"
-        nota += " Gatak, Selomartani, Kalasan, Sleman\n"
-        nota += " Telp: 0822 2715 4266\n"
+        nota += "KOPANA YOGYAKARTA".center(LEBAR_BARIS) + "\n"
+        nota += " Gatak, Selomartani, Kalasan, Sleman".center(LEBAR_BARIS) + "\n"
+        nota += " Telp: 0822 2715 4266".center(LEBAR_BARIS) + "\n"
         nota += "=" * LEBAR_BARIS + "\n"
         nota += f"Transaksi : #{transaksi_id}\n"
         nota += f"Tanggal   : {tanggal or datetime.now().strftime('%Y-%m-%d')}\n"
@@ -455,6 +456,8 @@ def buat_frame_penjualan(parent):
                 p.open()
                 p.text(nota_str)
                 p.cut()
+                p.close()
+                time.sleep(0.5)
                 print("[INFO] Nota berhasil dicetak ke printer thermal.")
             except Exception as e:
                 print("[ERROR] Gagal mencetak nota:", e)

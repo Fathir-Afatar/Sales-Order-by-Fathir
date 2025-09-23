@@ -126,32 +126,29 @@ class Usb(Escpos):
         :raises: :py:exc:`~escpos.exceptions.DeviceNotFoundError`
         :raises: :py:exc:`~escpos.exceptions.USBNotFoundError`
         """
-        if self._device:
-            self.close()
-
+        import usb.backend.libusb1
+        backend = usb.backend.libusb1.get_backend()
+        
         # Open device
         try:
-            self.device: Optional[Type[usb.core.Device]] = usb.core.find(
-                **self.usb_args
-            )
+            self.device = usb.core.find(backend=backend, **self.usb_args)
             assert self.device, USBNotFoundError(
-                f"Device {tuple(self.usb_args.values())} not found"
-                + " or cable not plugged in."
+                f"Device {tuple(self.usb_args.values())} not found or cable not plugged in."
             )
+            self._device =self.device
             self._check_driver()
             self._configure_usb()
         except (AssertionError, usb.core.USBError) as e:
-            # Raise exception or log error and cancel
             self.device = None
             if raise_not_found:
                 raise DeviceNotFoundError(
-                    f"Unable to open USB printer on {tuple(self.usb_args.values())}:"
-                    + f"\n{e}"
+                    f"Unable to open USB printer on {tuple(self.usb_args.values())}:\n{e}"
                 )
             else:
                 logging.error("USB device %s not found", tuple(self.usb_args.values()))
                 return
         logging.info("USB printer enabled")
+        logging.info(f"Backend aktif: {self.device.backend.__module__}")
 
     def _check_driver(self) -> None:
         """Check the driver.
@@ -160,31 +157,26 @@ class Usb(Escpos):
         only libusb1 backend implements the methods is_kernel_driver_active()
         and detach_kernel_driver().
         This helps enable this library to work on Windows.
+        Paksa detach kernel driver agar interface bisa di-claim ulang.
         """
-        if self.device and self.device.backend.__module__.endswith("libusb1"):
-            check_driver: Optional[bool] = None
+        if not self.device:
+            return
+        try:
+            if self.device.is_kernel_driver_active(0):
+                self.device.detach_kernel_driver(0)
+                logging.info("Kernel driver detached.")
+        except (NotImplementedError, usb.core.USBError) as e:
+            logging.warning("Detach kernel driver gagal atau tidak didukung: %s", str(e))
 
-            try:
-                check_driver = self.device.is_kernel_driver_active(0)
-            except NotImplementedError:
-                pass
-
-            if check_driver is None or check_driver:
-                try:
-                    self.device.detach_kernel_driver(0)
-                except NotImplementedError:
-                    pass
-                except usb.core.USBError as e:
-                    if check_driver is not None:
-                        logging.error("Could not detatch kernel driver: %s", str(e))
 
     def _configure_usb(self) -> None:
         """Configure USB."""
         if not self.device:
             return
         try:
-            self.device.set_configuration()
             self.device.reset()
+            self.device.set_configuration()
+
         except usb.core.USBError as e:
             logging.error("Could not set configuration: %s", str(e))
 
@@ -210,8 +202,22 @@ class Usb(Escpos):
             "Closing Usb connection to printer %s", tuple(self.usb_args.values())
         )
         usb.util.dispose_resources(self._device)
+
+        try:
+            usb.util.release_interface(self._device, 0)
+            logging.info("Interface 0 released manually.")
+        except Exception as e:
+            logging.warning("Gagal release inteface: %s", str(e))
+        
+        try:
+            self._device.reset()
+            logging.info("Device reset.")
+        except Exception as e:
+            logging.warning("Gagal reset device: %s", str(e))
+        
         self._device = False
-    
+        self.device = None
+
     def text(self, txt: str) -> None:
         """Kirim teks biasa ke printer."""
         self._raw(txt.encode("utf-8") + b"\n")
