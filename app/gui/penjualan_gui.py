@@ -245,6 +245,18 @@ def buat_frame_penjualan(parent):
 
     LEBAR_BARIS = 42
 
+    def format_item_thermal(nama, harga, qty, subtotal, max_width=LEBAR_BARIS):
+        lines = []
+        if len(nama) <= 30:
+            lines.append(f"{nama:<30}{f'{subtotal:,.0f}'}:>12")
+        else:
+            lines.append(nama[:max_width]) # baris nama penuh
+
+            lines.append(f"{'Subtotal':<30}{f'{subtotal:,.0f}':>12}")
+        lines.append(f"{qty} x {f'{harga:,.0f}':>8}")
+        return "\n".join(lines) + "\n"
+                                   
+
     def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ongkir=0, tanggal = None):
         nota = ""
         nota += "=" * LEBAR_BARIS + "\n"
@@ -256,28 +268,34 @@ def buat_frame_penjualan(parent):
         nota += f"Tanggal   : {tanggal or datetime.now().strftime('%Y-%m-%d')}\n"
         nota += f"Pembeli   : {pembeli}\n"
         nota += "-" * LEBAR_BARIS + "\n"
-        nota += f"{'Produk':<18}{'Harga':>9}{'Qty':>5} {'Subtotal':>10}\n"
+        nota += f"{'Produk':<30} {'Subtotal':>12}\n"
         nota += "-" * LEBAR_BARIS + "\n"
-
-        for item in items:
-            nama = item["produk_nama"][:18]
+        for item in items:        
+            nama = item["produk_nama"]
             harga = item["harga_satuan"]
             qty = item["jumlah"]
             subtotal = item["subtotal"]
-            
-            nota += f"{nama:<18}{f'{harga:,.0f}':>9}{qty:>5}{f'{subtotal:,.0f}':>10}\n"
             diskon = item.get("diskon", 0)
             catatan = item.get("catatan", "")
+
+            if len(nama) <= 30:
+                nota += f"{nama:<30}{f'{subtotal:,.0f}':>12}\n"
+            else:
+                nota += f"{nama[:LEBAR_BARIS]}\n"
+
+            # Baris qty x harga
+            nota += f"{qty} x {f'{harga:,.0f}'}\n"
+
             if diskon:
-                nota += f"{'Diskon':<16}{'':>8}{'':>5}{f'{diskon:,.0f}':>13}\n"
+                nota += f"{'Diskon':<30}{f'{diskon:,.0f}':>12}\n"
             if catatan:
-                nota += f"{'Catatan':<16} {catatan[:LEBAR_BARIS-16]}\n"
+                nota += f"{'Catatan':<9} {catatan[:LEBAR_BARIS-9]}\n"
         nota += "-" * LEBAR_BARIS + "\n"
         nota += f"{'Subtotal':<24}{f'Rp {total - ongkir:,.0f}':>18}\n"
         nota += f"{'Ongkir':<24}{f'Rp {ongkir:,.0f}':>18}\n"
         nota += f"{'Total':<24}{f'Rp {total:,.0f}':>18}\n"
         nota += "=" * LEBAR_BARIS + "\n"
-        nota += "Terima Kasih\n"
+        nota += "Terima Kasih".center(LEBAR_BARIS) + "\n"
         nota += "=" * LEBAR_BARIS + "\n"
         return nota
 
