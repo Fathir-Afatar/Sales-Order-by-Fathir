@@ -9,7 +9,7 @@ def reset_database():
         "detail_pembelian",
         "detail_penjualan",
         "kategori",
-        "log_harga_beli_harga_jual"
+        "log_harga_beli_harga_jual",
         "log_stock",
         "member",
         "produk",
@@ -30,3 +30,6 @@ def reset_database():
 
 if __name__ == "__main__":
     reset_database()
+
+
+#python -m app.utils.reset_db
