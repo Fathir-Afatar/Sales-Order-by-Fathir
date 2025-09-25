@@ -164,12 +164,42 @@ def buat_frame_member(parent):
     selected_id = None
     frame = tk.Frame(parent, bg="#f4f4f4")
 
+    build_header(frame)
+    build_filter_area(frame)
+    build_search_area(frame)
+    build_treeview(frame)
 
+    refresh_tree()
+    print("[DEBUG] data awal", semua_member())
+    frame.pack(fill="both", expand=True)
+
+def build_header(frame):
     # Header dan Tombol Aksi
 
     frame_header = tk.Frame(frame, bg="#f4f4f4")
     frame_header.pack(pady=10)
     tk.Button(frame_header, text="Tambah Member", command=tambah_member_gui).pack(side=tk.LEFT, padx=6)
+
+def build_filter_area(frame):
+    global combo_tipe, combo_ranting
+        
+    frame_filter = tk.Frame(frame, bg="#f4f4f4")
+    frame_filter.pack(pady=10)
+
+    all_member = semua_member()
+    # Ambil data unik
+    tipe_values = sorted(set([d["tipe"] for d in all_member]))
+    ranting_values = sorted(set([d["ranting"] for d in all_member]))
+
+    # Dropdown Tipe
+    tk.Label(frame_filter, text="Filter Tipe").pack(side='left')
+    combo_tipe = ttk.Combobox(frame_filter, values=tipe_values)
+    combo_tipe.pack(side='left', padx=5)
+
+    # Dropdown Ranting
+    tk.Label(frame_filter, text="Filter Ranting").pack(side='left')
+    combo_ranting = ttk.Combobox(frame_filter, values=ranting_values)
+    combo_ranting.pack(side='left', padx=5)
 
     # _______________ Filter Area
     def reset_filter():
@@ -178,50 +208,25 @@ def buat_frame_member(parent):
         print("[DEBUG] refresh_tree aktif oleh", __name__)
         refresh_tree()  # Tampikan semua member
 
-    def build_filter_gui():
-        global combo_tipe, combo_ranting
+    def filter_data():
+        print("[DEBUG] masuk ke filter_data")
+        tipe_selected = combo_tipe.get()
+        ranting_selected = combo_ranting.get()
+        hasil = [d for d in all_member if
+                (tipe_selected == '' or d["tipe"] == tipe_selected) and
+                (ranting_selected == '' or d["ranting"] == ranting_selected)]
         
-        frame_filter = tk.Frame(frame, bg="#f4f4f4")
-        frame_filter.pack(pady=10)
-
-        all_member = semua_member()
-        # Ambil data unik
-        tipe_values = sorted(set([d["tipe"] for d in all_member]))
-        ranting_values = sorted(set([d["ranting"] for d in all_member]))
-
-        # Dropdown Tipe
-
-        tk.Label(frame_filter, text="Filter Tipe").pack(side='left')
-        combo_tipe = ttk.Combobox(frame_filter, values=tipe_values)
-        combo_tipe.pack(side='left', padx=5)
-
-        # Dropdown Ranting
-
-        tk.Label(frame_filter, text="Filter Ranting").pack(side='left')
-        combo_ranting = ttk.Combobox(frame_filter, values=ranting_values)
-        combo_ranting.pack(side='left', padx=5)
-
-        #tk.Button(frame_header, text="Terapkan Filter", command=lambda: filter_member()).pack(side=tk.LEFT, padx=6)
-        tk.Button(frame_filter, text="Reset Filter", command=reset_filter).pack(side=tk.LEFT, padx=4)
-
-        def filter_data():
-            print("[DEBUG] masuk ke filter_data")
-            tipe_selected = combo_tipe.get()
-            ranting_selected = combo_ranting.get()
-            hasil = [d for d in all_member if
-                     (tipe_selected == '' or d["tipe"] == tipe_selected) and
-                     (ranting_selected == '' or d["ranting"] == ranting_selected)]
-        
-            tree.delete(*tree.get_children())
-            for row in hasil:
-                tree.insert("", tk.END, iid=row["id_member"], values=(
-                    row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"]
+        tree.delete(*tree.get_children())
+        for row in hasil:
+            tree.insert("", tk.END, iid=row["id_member"], values=(
+                row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"]
             ))
-        
-        tk.Button(frame_filter, text="Filter", command=filter_data).pack(side='left', padx=5)
-    build_filter_gui()
 
-    # ______________ Pencarian Nama
+    tk.Button(frame_filter, text="Reset Filter", command=reset_filter).pack(side=tk.LEFT, padx=4)        
+    tk.Button(frame_filter, text="Filter", command=filter_data).pack(side='left', padx=5)
+
+def build_search_area(frame):
+    global entry_search
 
     frame_search = tk.Frame(frame, bg="#f4f4f4")
     frame_search.pack(pady=5)
@@ -229,9 +234,25 @@ def buat_frame_member(parent):
     tk.Label(frame_search, text="Cari Nama Member:", bg="#f4f4f4").pack(side=tk.LEFT)
     entry_search = tk.Entry(frame_search, width=30)
     entry_search.pack(side=tk.LEFT, padx=4)
+
+    def cari_member_gui():
+        print("[DEBUG] masuk ke cari_member_gui")
+        keyword = entry_search.get()
+        if not keyword.strip():
+            messagebox.showwarning("Pencarian Kosong", "Masukkan kata kunci nama member.")
+            return
+        from app.core.member_core import cari_member
+        hasil = cari_member(keyword)
+        tree.delete(*tree.get_children())
+        for row in hasil:
+            tree.insert("", tk.END, iid=row["id_member"], values=(
+                row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"] 
+            ))
+
     tk.Button(frame_search, text="Cari", command=lambda: cari_member_gui()).pack(side=tk.LEFT, padx=4)
 
-    # ____________ Treeview Daftar Member
+def build_treeview(frame):
+    global tree
    
     columns = ("id_member", "kode_member", "nama", "no_hp", "alamat", "tipe", "ranting", )
     column_labels = {
@@ -245,8 +266,7 @@ def buat_frame_member(parent):
 
     }
     frame_treeview = tk.Frame(frame)
-    frame_treeview.pack(fill="both", expand=True, padx=10, pady=10)
-    
+    frame_treeview.pack(fill="both", expand=True, padx=10, pady=10)    
     frame_treeview.grid_rowconfigure(0, weight=1)
     frame_treeview.grid_columnconfigure(0, weight=1)
 
@@ -265,29 +285,15 @@ def buat_frame_member(parent):
 
     tree.bind("<<TreeviewSelect>>", on_tree_select)
 
-    def cari_member_gui():
-        print("[DEBUG] masuk ke cari_member_gui")
-        keyword = entry_search.get()
-        if not keyword.strip():
-            messagebox.showwarning("Pencarian Kosong", "Masukkan kata kunci nama member.")
-            return
-        from app.core.member_core import cari_member
-        hasil = cari_member(keyword)
-        tree.delete(*tree.get_children())
-        for row in hasil:
-            tree.insert("", tk.END, iid=row["id_member"], values=(
-                row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"] 
-            ))
-
-
-    # _________ Tombol Bawah Edit & Hapus
+def build_footer(frame):
 
     frame_footer = tk.Frame(frame, bg="#f4f4f4")
     frame_footer.pack(pady=10)
 
     tk.Button(frame_footer, text="Edit Member", command=lambda: edit_member_gui(frame)).pack(side=tk.LEFT, padx=8)
     tk.Button(frame_footer, text="Hapus Member", command=hapus_member_gui).pack(side=tk.LEFT, padx=8)
-    
+
+
     refresh_tree()
     print("[DEBUG] data awal", semua_member())
     frame.pack(fill="both", expand=True)
