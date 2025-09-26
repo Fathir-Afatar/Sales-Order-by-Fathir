@@ -218,3 +218,17 @@ def tambah_kategori(nama):
         return False
     finally:
         conn.close()
+
+def get_produk_by_id(id_produk):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id_produk, nama_produk, kode_produk, kategori_id, merk, harga_beli, harga_jual, stok, berat FROM produk WHERE id_produk = ?", (id_produk,))
+    row = cursor.fetchone()
+    print(f"Hasil query: {row}")
+    conn.close()
+
+    if row:
+        keys = ["id_produk","nama_produk","kode_produk","kategori_produk",
+            "merk","harga_beli","harga_jual","stok","berat"]
+        return dict(zip(keys, row))
+    return None

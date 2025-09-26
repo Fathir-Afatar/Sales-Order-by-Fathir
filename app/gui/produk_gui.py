@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import pandas as pd
-from app.core.product_core import tambah_produk, semua_produk,  update_produk, hapus_produk, bersihkan_angka, get_kategori_id_by_nama, ambil_semua_kategori, ambil_produk_by_kategori_id, tambah_kategori
-from app.constants.config import get_connection
+from app.core.product_core import tambah_produk, semua_produk,  update_produk, hapus_produk, bersihkan_angka, get_kategori_id_by_nama, ambil_semua_kategori, ambil_produk_by_kategori_id, tambah_kategori, get_produk_by_id
+
 
 def buka_form_tambah_produk(parent):
     global entry_nama, entry_kode, entry_kategori, entry_merk
@@ -257,23 +257,8 @@ def simpan_perubahan_produk(form, id_produk, entries):
         refresh_tree()
     else:
         print("Gagal", "Gagal memperbarui produk.")
-
-def get_produk_by_id(id_produk):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id_produk, nama_produk, kode_produk, kategori_id, merk, harga_beli, harga_jual, stok, berat FROM produk WHERE id_produk = ?", (id_produk,))
-    row = cursor.fetchone()
-    print(f"Hasil query: {row}")
-    conn.close()
-
-    if row:
-        keys = ["id_produk","nama_produk","kode_produk","kategori_produk",
-            "merk","harga_beli","harga_jual","stok","berat"]
-        return dict(zip(keys, row))
-    return None
     
 # Untuk hapus produk
-
 def hapus_produk_gui():
     if not selected_id:
         messagebox.showwarning("Tidak Ada Pilihan", "Pilih produk yang akan dihapus di tabel.")
