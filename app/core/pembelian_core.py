@@ -1,6 +1,5 @@
-import sqlite3
 from datetime import datetime
-from app.core.product_core import tambah_stok, kurangi_stok
+from app.core.product_core import update_stok, tambah_stok, kurangi_stok
 from app.core.stok_core import catat_log_stok, get_stok_terakhir
 
 from app.constants.config import get_connection
@@ -37,9 +36,7 @@ def tambah_pembelian(supplier_id: str, daftar_barang:list):
                            VALUES (?, ?, ?, ?)
                            """, (pembelian_id, item["kode_produk"], item["qty"], item["harga_beli"]))
             # Gunakan koneksi yang sama untuk update stok
-            cursor.execute("""
-                UPDATE produk SET stok = stok + ? WHERE kode_produk = ?
-            """,(item["qty"], item["kode_produk"]))
+            update_stok(item["kode_produk"], item["qty"])
 
             # Ambil stok sebelum update
             stok_awal = get_stok_terakhir(item["kode_produk"])
@@ -106,7 +103,7 @@ def validasi_keranjang(daftar_barang):
 
 def get_pembelian_untuk_koreksi(pembelian_id):
     header = get_histori_pembelian()
-    detail = get_histori_pembelian(pembelian_id)
+    detail = get_histori_pembelian()
     return {"header":header, "detail": detail}
 
 def hapus_pembelian(pembelian_id):
@@ -126,7 +123,7 @@ def hapus_pembelian(pembelian_id):
             kurangi_stok(kode_produk, qty)
 
         # Hapus detail dan header
-        cursor.execute("DELETE FROM detaul_pembelian WHERE pembelian_id = ?", (pembelian_id,))
+        cursor.execute("DELETE FROM detail_pembelian WHERE pembelian_id = ?", (pembelian_id,))
         cursor.execute("DELETE FROM transaksi_pembelian WHERE id_pembelian = ?", (pembelian_id,))
         conn.commit()
         print(f"[INFO] Transaksi pembelian {pembelian_id} berhasil dihapus.")
@@ -170,3 +167,4 @@ def update_pembelian(pembelian_id, hasil_koreksi):
         cursor.execute("UPDATE transaksi_pembelian SET total_harga = ? WHERE id_pembelian = ?", (total_baru, pembelian_id))
     conn.commit()
     conn.close()
+

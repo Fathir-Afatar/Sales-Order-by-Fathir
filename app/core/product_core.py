@@ -121,10 +121,16 @@ def update_stok(kode_produk, delta):
         conn.close()
         return False
     stok_baru = max(0, result[0] + delta)
-    cursor.execute("""UPDATE produk WHERE kode_produk = ?""", (stok_baru, kode_produk))
+    cursor.execute("""UPDATE produk WHERE SET stok= ? kode_produk = ?""", (stok_baru, kode_produk))
     conn.commit()
     conn.close()
     return True
+
+def tambah_stok(kode_produk, jumlah):
+    return update_stok(kode_produk, jumlah)
+
+def kurangi_stok(kode_produk, jumlah):
+    return update_stok(kode_produk, -jumlah)
 
 # Semua Produk
 
@@ -232,3 +238,6 @@ def get_produk_by_id(id_produk):
             "merk","harga_beli","harga_jual","stok","berat"]
         return dict(zip(keys, row))
     return None
+
+def get_harga_beli(kode_produk):
+    return get_field_by_kode(kode_produk, "harga_beli")
