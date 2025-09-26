@@ -11,18 +11,12 @@ def get_produk(kode_produk):
     cursor.execute("SELECT id_produk, nama_produk, harga_jual FROM produk WHERE kode_produk = ?", (kode_produk,))
     row = cursor.fetchone()
     conn.close()
-    if row:
-        return {
-            "id" : row [0],
-            "nama" : row [1],
-            "harga_jual" : row [2]
-        }
-    return None
+    columns = ["id", "nama", "harga_jual"]
+    return dict(zip(columns, row)) if row else None
 
 # Add New Product (untuk transaksi pertama kali)
 
 def tambah_produk(data):
-       
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -71,32 +65,17 @@ def ambil_produk(id_produk):
                 """, (id_produk,))
     result = cursor.fetchone()
     conn.close()
-    return result
+    columns = [col[0] for col in cursor.description]
+    return dict(zip(columns, result)) if result else None
 
-# Update Produk
+def validate_produk_data(harga_beli, harga_jual, stok, berat):
+    if any(x is None for x in [harga_beli, harga_jual, stok, berat]):
+        raise ValueError("Semua nilai numerik wajib diisi.")
+    if any (x < 0 for x in [harga_beli, harga_jual, stok, berat]):
+        raise ValueError("Nilai tidak boleh negatif")
 
-def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_jual, stok, berat):
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        if harga_jual < 0 or harga_beli < 0 or berat < 0 or stok < 0:
-            print("Data produk tidak valid.")
-            return False
-    except TypeError as e:
-        print("[ERROR] Tipe data tidak valid:", e)
-        return False
-    print("[DEBUG] Tipe data:")
-    print("harga_beli:", type(harga_beli))
-    print("harga_jual:", type(harga_jual))
-    print("stok:", type(stok))
-    print("berat:", type(berat))
-
-    cursor.execute("""
-                   UPDATE produk
-                   SET nama_produk = ?, kode_produk = ?, kategori_id = ?, merk = ?, harga_beli = ?, harga_jual = ?, stok = ?, berat = ?
-                   WHERE id_produk = ?
-                """, (nama, kode, kategori_id, merk, harga_beli, harga_jual, stok, berat, id_produk))
-    print("Menjalankan update_produk dengan:")
+def log_debug_produk(id_produk, nama, kode, kategori_id, harga_beli, harga_jual, stok, berat):
+    print("[DEBUG] Menjalankan update_produk dengan:")
     print("ID:", id_produk)
     print("Nama:", nama)
     print("Kode:", kode)
@@ -105,33 +84,47 @@ def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_ju
     print("Harga Jual:", harga_jual)
     print("Stok:", stok)
     print("Berat:", berat)
+
+# Update Produk
+
+def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_jual, stok, berat):
+    try:
+        validate_produk_data(harga_beli, harga_jual, stok, berat)
+    except ValueError as e:
+        print("[ERROR]", e)
+        return False
+
+    log_debug_produk(id_produk, nama, kode, kategori_id, harga_beli, harga_jual, stok, berat)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+                   UPDATE produk
+                   SET nama_produk = ?, kode_produk = ?, kategori_id = ?, merk = ?, harga_beli = ?, harga_jual = ?, stok = ?, berat = ?
+                   WHERE id_produk = ?
+                """, (nama, kode, kategori_id, merk, harga_beli, harga_jual, stok, berat, id_produk))
     conn.commit()
     conn.close()
     return True
 
-# Tambah stok (untuk transaksi yang kedua dan seterusnya dari produk atau supplier yang sama)
-
-def tambah_stok(kode_produk: str, jumlah:int):
-    """
-    Menambahkan stok ke produk yang sudah ada.
-    """
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            UPDATE produk 
-            SET stok = stok + ?
-            WHERE kode_produk = ?    
-            """, (jumlah, kode_produk))
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Gagal menambahkan stok: {e}")
-        conn.rollback()
+# Tambah dan Kurangi stok
+def update_stok(kode_produk, delta):
+    if not isinstance(delta, int):
+        print("[ERRPR] Delta stok harus integer")
         return False
-    finally:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT stok FROM produk WHERE kode_produk =?", (kode_produk,))
+    result = cursor.fetchone()
+    if not result:
+        print(f"[ERROR] Produk {kode_produk} tidak ditemukan.")
         conn.close()
+        return False
+    stok_baru = max(0, result[0] + delta)
+    cursor.execute("""UPDATE produk WHERE kode_produk = ?""", (stok_baru, kode_produk))
+    conn.commit()
+    conn.close()
+    return True
 
 # Semua Produk
 
@@ -139,50 +132,27 @@ def semua_produk():
     conn = get_connection()
     cursor = conn.cursor()
     print("[INFO] Menjalankan query semua_produk dengan LEFT JOIN")
-    cursor.execute("""SELECT produk.*, kategori.nama_kategori FROM produk LEFT JOIN kategori ON produk.kategori_id = kategori.id_kategori""")
+    query = """SELECT produk.*, kategori.nama_kategori FROM produk LEFT JOIN kategori ON produk.kategori_id = kategori.id_kategori"""
+    cursor.execute(query)
     rows = cursor.fetchall()
+    columns = [col[0] for col in cursor.description]
     conn.close()
 
     # Buat list of object atau dict
-    produk_list = []
+    produk_list = [dict(zip(columns, row)) for row in rows]
+    for produk in produk_list:
+        print("[DEBUG] Produk:", produk)
 
-    for row in rows:
-        print("[DEBUG] Row:", row)
-        produk = {
-            "id_produk": row[0],
-            "nama_produk": row[1],
-            "kode_produk": row[2],
-            "kategori_produk": row[3],
-            "merk": row[4],
-            "harga_beli": row[5],
-            "harga_jual": row[6],
-            "stok": row[7],
-            "berat": row[8]
-        }
-        produk_list.append(produk)
-    #keys = ["id_produk", "nama_produk", "kode_produk", "kategori_id", "merk", "harga_beli", "harga_jual", "stok", "berat","deleted_at", "nama_kategori"]
-    #produk_list = [dict(zip(keys, row)) for row in rows]
     return produk_list
 
-# Stok Product Check
-
-def cek_stok(id_produk):
+# Get_harga_beli dan cek_stok
+def get_field_by_kode(kode_produk, field):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-                   SELECT stok FROM produk WHERE id_produk = ?
-                   """, (id_produk,))
+    cursor.execute(f"SELECT {field} FROM produk WHERE kode_produk = ?", (kode_produk,))
     result = cursor.fetchone()
     conn.close()
     return result[0] if result else None
-
-def get_harga_beli(kode_produk):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT harga_beli FROM produk WHERE kode_produk = ?", (kode_produk,))
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result else 0
 
 def ambil_daftar_produk():
     conn = get_connection()
@@ -192,28 +162,10 @@ def ambil_daftar_produk():
     conn.close()
     return [{"kode_produk": row[0], "nama": row[1], "harga": row[2]} for row in hasil]
 
-def kurangi_stok(kode_produk, jumlah):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    # AMbil stok saat ini
-
-    cursor.execute("SELECT stok FROM produk WHERE kode_produk =?", (kode_produk,))
-    hasil = cursor.fetchone()
-
-    if hasil :
-        stok_sekarang = hasil[0]
-        stok_baru = max(0, stok_sekarang - jumlah) # Hindari stok negatif
-
-        cursor.execute("UPDATE produk SET stok = ? WHERE kode_produk = ?", (stok_baru, kode_produk))
-        conn.commit()
-    else:
-        print(f"[ERROR] Produk dengan kode {kode_produk} tidak ditemukan.")
-    
-    conn.close()
 
 def bersihkan_angka(nilai):
     try:
+        if not nilai: return 0.0
         nilai_bersih = str(nilai).replace("Rp", "").replace(",", "").strip()
         return float(nilai_bersih)
     except Exception as e:
@@ -239,16 +191,23 @@ def ambil_semua_kategori():
 def ambil_produk_by_kategori_id(kategori_id):
     conn = get_connection()
     cursor = conn.cursor()
-    print("[INFO] Menjalankan query semua_produk dengan LEFT JOIN")
-    cursor.execute("""
-        SELECT produk.*, kategori.nama_kategori FROM produk LEFT JOIN kategori ON produk.kategori_id = kategori.id_kategori WHERE produk.kategori_id = ? """, (kategori_id,))
+    query = """
+        SELECT produk.*, kategori.nama_kategori 
+        FROM 
+        produk LEFT JOIN kategori ON produk.kategori_id = kategori.id_kategori 
+        WHERE produk.kategori_id = ? """
+    cursor.execute(query, (kategori_id,))
     rows = cursor.fetchall()
+    columns = [col[0] for col in cursor.description]
     conn.close()
-
-    keys = ["id_produk", "nama_produk", "kode_produk", "kategori_id", "merk", "harga_beli", "harga_jual", "stok", "berat","deleted_at", "nama_kategori"]
-    return [dict(zip(keys, row)) for row in rows]
-
+    return [dict(zip(columns, row)) for row in rows]
+            
 def tambah_kategori(nama):
+    nama = nama.strip()
+    if not nama:
+        print("[ERROR] Nama kategori kosong.")
+        return False
+    
     conn = get_connection()
     cursor = conn.cursor()
     try:
