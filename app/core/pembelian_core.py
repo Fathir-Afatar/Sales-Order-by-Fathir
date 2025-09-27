@@ -168,3 +168,22 @@ def update_pembelian(pembelian_id, hasil_koreksi):
     conn.commit()
     conn.close()
 
+
+def hitung_total_keranjang(daftar_barang):  # Untuk menampilkan total sebelum simpan
+    return sum(item["qty"] * item["harga_beli"] for item in daftar_barang)
+
+def ambil_supplier_nama(supplier_id): # Untuk tampilkan histori atau detail pembelian
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nama FROM supplier WHERE id = ?", (supplier_id,))
+    hasil = cursor.fetchone()
+    conn.close()
+    return hasil [0] if hasil else "-"
+
+def get_produk_nama(kode_produk): # memperjelas tampilan detail pembelian
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nama_produk FROM produk WHERE kode_produk = ?", (kode_produk,))
+    hasil = cursor.fetchone()
+    conn.close()
+    return hasil[0] if hasil else "-"
