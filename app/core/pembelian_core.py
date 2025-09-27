@@ -36,10 +36,10 @@ def tambah_pembelian(supplier_id: str, daftar_barang:list):
                            VALUES (?, ?, ?, ?)
                            """, (pembelian_id, item["kode_produk"], item["qty"], item["harga_beli"]))
             # Gunakan koneksi yang sama untuk update stok
-            update_stok(item["kode_produk"], item["qty"])
+            update_stok(cursor, item["kode_produk"], item["qty"])
 
             # Ambil stok sebelum update
-            stok_awal = get_stok_terakhir(item["kode_produk"])
+            stok_awal = get_stok_terakhir(cursor, item["kode_produk"])
             stok_akhir = stok_awal + item["qty"]
             cursor.execute("""
                 UPDATE produk SET stok = stok + ? WHERE kode_produk = ?

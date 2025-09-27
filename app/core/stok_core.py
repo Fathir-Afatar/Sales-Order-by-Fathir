@@ -5,8 +5,6 @@ from calendar import monthrange
 from datetime import datetime
 from app.constants.config import get_connection
 
-conn = get_connection()
-
 # Note Stock Changes
 
 def catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, jenis_perubahan):
@@ -76,17 +74,14 @@ def generate_kartu_stok(produk_id, bulan, tahun):
     
     return kartu
 
-def get_stok_terakhir(kode_produk):
+def get_stok_terakhir(cursor, kode_produk):
     # Ambil stok terakhir dari log, berguna saat validasi penjualan atau pembelian
-    conn = get_connection()
-    cursor = conn.cursor()
     cursor.execute("""
         SELECT stok_akhir FROM log_stock
         WHERE produk_id = ?
         ORDER BY tanggal DESC LIMIT 1
     """, (kode_produk,))
     result = cursor.fetchone()
-    conn.close()
     return result[0] if result else 0
 
 def rekalkulasi_stok(produk_id): 

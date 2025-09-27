@@ -2,16 +2,23 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from app.core.pembelian_core import tambah_pembelian, get_detail_pembelian, get_histori_pembelian, update_pembelian, get_produk_nama
 from app.core.supplier_core import ambil_supplier
-from app.core.product_core import ambil_daftar_produk
+from app.core.product_core import ambil_daftar_produk, bersihkan_angka
 from app.constants.config import get_connection
 from tkinter import simpledialog
 
 
 def buat_frame_pembelian(parent):
     frame = tk.Frame(parent, bg="#f4f4f4")
-    build_supplier_section(frame)
-    build_produk_section(frame)
-    build_histori_section(frame)
+    combo_supplier, supplier_map = build_supplier_section(frame)
+    tree_input, entry_cari, reset_pencarian = build_produk_section(frame)
+    tree_histori = build_histori_pembelian(frame)
+    buka_konfirmasi_pembelian = setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame, tree_histori)
+
+    setup_btn_lihat_detail(tree_histori, frame)
+
+    btn_simpan = tk.Button(frame, text="Simpan Pembelian", command=buka_konfirmasi_pembelian)
+    btn_simpan.pack(pady=5)
+
     frame.pack(fill="both", expand=True)
 
 def build_supplier_section(frame):
@@ -41,21 +48,24 @@ def build_produk_section(frame):
     # Search bar + Reset
     frame_search = tk.Frame(frame_input)
     frame_search.pack(pady=5)
+    # Frame isi: Treeview + Scrollbar
+    frame_input_scroll = tk.Frame(frame_input)
+    frame_input_scroll.pack(fill="both", expand=True)
 
     entry_cari = tk.Entry(frame_search, width=30)
     entry_cari.pack(side="left", pady=(0, 5))
     entry_cari.insert(0, "cari produk berdasarkan nama atau kode ...")
 
-    btn_reset = tk.Button(frame_search, text="🔄 Reset", command=lambda:reset_pencarian())
-    btn_reset.pack(side="left")
-
-    # Frame isi: Treeview + Scrollbar
-    frame_input_scroll = tk.Frame(frame_input)
-    frame_input_scroll.pack(fill="both", expand=True)
-
     scroll_produk = tk.Scrollbar(frame_input_scroll, orient="vertical")
     tree_input = ttk.Treeview(frame_input_scroll, columns=("Pilih", "Kode", "Nama", "Jumlah", "Harga"), show="headings", yscrollcommand=scroll_produk.set)
     scroll_produk.config(command=tree_input.yview)
+
+    produk_list = ambil_daftar_produk()
+    tampilkan_produk(tree_input, produk_list)
+
+    reset_pencarian = setup_pencarian_produk(entry_cari, tree_input, produk_list)
+    btn_reset = tk.Button(frame_search, text="🔄 Reset", command=lambda:reset_pencarian())
+    btn_reset.pack(side="left")
     
     for col in ("Pilih", "Kode", "Nama", "Jumlah", "Harga"):
         tree_input.heading(col, text=col if col != "Pilih" else "✔")
@@ -64,15 +74,13 @@ def build_produk_section(frame):
     tree_input.pack(side="left", fill="both", expand=True)
     scroll_produk.pack(side="right", fill="y")
 
-    produk_list = ambil_daftar_produk()
-    tampilkan_produk(tree_input, produk_list)
-
     entry_cari.bind("<FocusIn>", lambda e: entry_cari.delete(0, "end"))
     entry_cari.bind("<Key>", lambda e: filter_produk(entry_cari.get())) 
     btn_reset.config(command=lambda: tampilkan_produk(tree_input, produk_list))
     tree_input.bind("<Button-1>", lambda e: toogle_pilih(e, tree_input))
+    tree_input.bind("<Double-1>", lambda e: tambah_produk(e, tree_input))
 
-    return tree_input, entry_cari
+    return tree_input, entry_cari, reset_pencarian
 
 def build_histori_section(frame):
     font_normal= ("Segoe UI", 10)
@@ -93,7 +101,8 @@ def build_histori_section(frame):
     tree_histori.pack(side="left", fill="both", expand=True)
     scroll_histori.pack(side="right", fill="y")
 
-    return
+    return tree_histori
+
 def tampilkan_produk(tree, list_produk):
     tree.delete(*tree.get_children())
     for p in list_produk:
@@ -123,7 +132,7 @@ def toogle_pilih(event, tree):
     values = tree.item(item_id)["values"]
     values[0] = "✔" if values[0] == "" else ""
     tree.item(item_id, values=values)
-    tree.bind("<Button-1>", toogle_pilih)
+
     
 def build_interaksi_pembelian(entry_cari, frame, tree_input, combo_supplier, produk_list, supplier_map):
     setup_pencarian_produk(entry_cari, tree_input, produk_list)
@@ -136,6 +145,7 @@ def setup_pencarian_produk(entry_cari, tree_input, produk_list):
         tampilkan_produk(produk_list)
     entry_cari.delete(0, "end")
     tampilkan_produk(tree_input, produk_list)
+    return reset_pencarian
 
 def setup_edit_jumlah(tree_input):    
     # Edit Jumlah (dual click)
@@ -161,6 +171,14 @@ def setup_edit_jumlah(tree_input):
     tree_input.bind("<Double-1>", edit_jumlah)
 
 def setup_konfirmasi_pembelian(frame, tree_input, combo_supplier, supplier_map):
+    def ambil_produk_terpilih():
+        hasil = []
+        for item_id in tree_input.get_children():
+            values = tree_input.item(item_id)["values"]
+            if values[0] == "✔" and int(values[3]) > 0:
+                hasil.append({"kode_produk":values[1], "nama":values[2], "qty":int(values[3]), "harga_beli":int(bersihkan_rupiah(values[4]))})
+        return hasil  
+
     # Buka konfirmasi pembelian 
     def buka_konfirmasi_pembelian():
         print("Fungsi konfirmasi dipanggil")
@@ -303,7 +321,7 @@ def simpan_pembelian(combo_supplier, tree_input, supplier_map, tree_histori):
         messagebox.showerror("Gagal", "Transaksi gagal disimpan.")
     muat_histori(tree_histori)
 
-    # fungsi untuk merubah format rupiah ke logika yang diterima oleh DB
+# fungsi untuk merubah format rupiah ke logika yang diterima oleh DB
 def bersihkan_rupiah(rp_string):
     try :
         angka = rp_string.replace("Rp", "").replace(",","").strip()
@@ -312,13 +330,32 @@ def bersihkan_rupiah(rp_string):
         print("[ERROR] Gagal parsing harga:", rp_string, e)
         return 0.0
 
+def tambah_produk(event, tree_input):
+    item_id = tree_input.focus()
+    if not item_id:
+        return
+    values = tree_input.item(item_id)["values"]
+    kode_produk = values[1]
+    nama_produk = values[2]
+    jumlah_sekarang = int(values[3]) if str(values[3]).isdigit() else 0
+
+    jumlah_baru = simpledialog.askinteger("Tambah Produk", f"Masukkan jumlah untuk {nama_produk}", initialvalue=jumlah_sekarang, minvalue=1)
+    if jumlah_baru:
+        values[3] = jumlah_baru
+        tree_input.item(item_id, values=values)
+    if values[0] != "✔":
+        messagebox.showinfo("Info", "Silakan centang produk terlebih dahulu.")
+        return
+
 def build_histori_interaksi(frame, tree_histori, tree_input, combo_supplier, supplier_map):
     setup_detail_popup(tree_histori, frame)
     setup_btn_lihat_detail(tree_histori, frame)
     setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame)
 
+def setup_detail_popup(tree_histori, frame):
+    tampilkan_detail_manual(tree_histori, frame)
 
-def setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame):
+def setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame, tree_histori):
     def ambil_produk_terpilih():
         hasil = []
         for item_id in tree_input.get_children():
@@ -352,12 +389,10 @@ def setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame):
             messagebox.showerror("Gagal", "Transaksi gagal disimpan.")
         muat_histori(tree_histori)
 
-
-        btn_simpan = tk.Button(frame, text="Simpan Pembelian", command=buka_konfirmasi_pembelian)
-        btn_simpan.pack(side="left", padx=10)
-    
+    return buka_konfirmasi_pembelian
+   
 def setup_btn_lihat_detail(tree_histori, frame):
-    btn_lihat_detail = tk.Button(frame, text="Lihat Detail Transaksi", command=tampilkan_detail_manual)
+    btn_lihat_detail = tk.Button(frame, text="Lihat Detail Transaksi", command=lambda: tampilkan_detail_manual(tree_histori, frame))
     btn_lihat_detail.pack(pady=5)
 
 def tampilkan_detail_manual(tree_histori, frame):
@@ -380,7 +415,7 @@ def tampilkan_detail_manual(tree_histori, frame):
     for item in detail:
         harga_format = f"Rp {int(float(item.get('harga_beli', 0))):,}"
         tree_popup.insert("", "end", values=(item.get("kode_produk", "-"), item.get("nama_produk", "-"), item.get("qty", 0), harga_format))
-
+    tree_popup.bind("<Double-1>", lambda e: edit_qty_popup(e, tree_popup))
     total_harga = sum(item["qty"] * item["harga_beli"] for item in detail)
     label_total = tk.Label(window, text=f"Total harga: Rp {total_harga:,}", font=("Segoe UI", 10, "bold"))
     label_total.pack(pady=5)
@@ -389,7 +424,7 @@ def tampilkan_detail_manual(tree_histori, frame):
         hasil_koreksi = []
         for iid in tree_popup.get_children():
             v = tree_popup.item(iid)["values"]
-            hasil_koreksi.append({"kode_produk": v[0], "nama_produk":v[1], "qty":int(v[2]), "harga_beli": int(float(v[3]))})
+            hasil_koreksi.append({"kode_produk": v[0], "nama_produk":v[1], "qty":int(v[2]), "harga_beli": int(bersihkan_angka(v[3]))})
         # Validasi: pastikan ada qty>0
         if not any(item["qty"] > 0 for item in hasil_koreksi):
             messagebox.showwarning("Gagal", "Semua jumlah produk nol. Koreksi tidak disimpan.")
@@ -398,8 +433,23 @@ def tampilkan_detail_manual(tree_histori, frame):
             return
         update_pembelian(pembelian_id, hasil_koreksi)
         messagebox.showinfo("Sukses", "Koreksi berhasil disimpan.")
+        muat_histori(tree_histori)
         window.destroy()
-        muat_histori()
+
+    def edit_qty_popup(event, tree):
+        item_id = tree.identify_row(event.y)
+        col = tree.identify_column(event.x)
+
+        if not item_id or col != "#3": # Kolom ke 3 --> Qty
+            return
+        values = tree.item(item_id)["values"]
+        nama_produk = values[1]
+        qty_sekarang = int(values[2]) if str(values[2]).isdigit() else 0
+
+        qty_baru = simpledialog.askinteger("Edit Jumlah", f"Masukkan jumlah baru untuk {nama_produk}", initialvalue=qty_sekarang, minvalue=0)
+        if qty_baru is not None:
+            values[2] = qty_baru
+            tree.item(item_id, values=values)
 
     def batal_koreksi():
         window.destroy()

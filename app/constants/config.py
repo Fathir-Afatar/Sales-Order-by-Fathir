@@ -14,6 +14,6 @@ def get_database_path():
 
 def get_connection():
     db_path = get_database_path()
-    return sqlite3.connect(db_path)
+    return sqlite3.connect(db_path,timeout=10)
 
 # Digunakan oleh semua modul core untuk koneksi database

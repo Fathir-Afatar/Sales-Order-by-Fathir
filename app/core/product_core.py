@@ -1,8 +1,6 @@
 import sqlite3
 from app.constants.config import get_connection
 
-conn = get_connection()
-
 # Get Produk
 
 def get_produk(kode_produk):
@@ -108,22 +106,17 @@ def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_ju
     return True
 
 # Tambah dan Kurangi stok
-def update_stok(kode_produk, delta):
+def update_stok(cursor, kode_produk, delta):
     if not isinstance(delta, int):
-        print("[ERRPR] Delta stok harus integer")
+        print("[ERROR] Delta stok harus integer")
         return False
-    conn = get_connection()
-    cursor = conn.cursor()
     cursor.execute("SELECT stok FROM produk WHERE kode_produk =?", (kode_produk,))
     result = cursor.fetchone()
     if not result:
         print(f"[ERROR] Produk {kode_produk} tidak ditemukan.")
-        conn.close()
         return False
     stok_baru = max(0, result[0] + delta)
-    cursor.execute("""UPDATE produk WHERE SET stok= ? kode_produk = ?""", (stok_baru, kode_produk))
-    conn.commit()
-    conn.close()
+    cursor.execute("UPDATE produk SET stok= ? WHERE kode_produk = ?", (stok_baru, kode_produk))
     return True
 
 def tambah_stok(kode_produk, jumlah):
