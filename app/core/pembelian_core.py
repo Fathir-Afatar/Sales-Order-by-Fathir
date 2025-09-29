@@ -35,8 +35,6 @@ def tambah_pembelian(supplier_id: str, daftar_barang:list):
                            INSERT INTO detail_pembelian (pembelian_id, kode_produk, qty, harga_beli)
                            VALUES (?, ?, ?, ?)
                            """, (pembelian_id, item["kode_produk"], item["qty"], item["harga_beli"]))
-            # Gunakan koneksi yang sama untuk update stok
-            update_stok(cursor, item["kode_produk"], item["qty"])
 
             # Ambil stok sebelum update
             stok_awal = get_stok_terakhir(cursor, item["kode_produk"])
@@ -45,7 +43,9 @@ def tambah_pembelian(supplier_id: str, daftar_barang:list):
                 UPDATE produk SET stok = stok + ? WHERE kode_produk = ?
             """, (item["qty"], item["kode_produk"]))
 
-            # Query ambil produk_id berdasarkan kode_produk
+            # Gunakan koneksi yang sama untuk update stok
+            update_stok(cursor, item["kode_produk"], item["qty"])
+             # Query ambil produk_id berdasarkan kode_produk           
             cursor.execute("SELECT id_produk FROM produk WHERE kode_produk = ?", (item["kode_produk"],))
             result = cursor.fetchone()
             if result:
