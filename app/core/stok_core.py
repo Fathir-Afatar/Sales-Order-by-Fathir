@@ -61,9 +61,10 @@ def bentuk_kartu_stok(stok_harian, bulan, tahun): # Bentuk kartu stok dari hasil
         h = str(hari)
         kartu.append({
             "tanggal": h,
-            "awal": stok_harian[h]["awal"] or 0,
-            "masuk": stok_harian[h]["keluar"],
-            "akhir": stok_harian[h]["akhir"] or stok_harian[h]["awal"] or 0
+            "awal": stok_harian[h]["awal"] if stok_harian[h]["awal"] is not None else 0,
+            "masuk": stok_harian[h]["masuk"],
+            "keluar": stok_harian[h]["keluar"] if stok_harian[h]["keluar"] is not None else 0,
+            "akhir": stok_harian[h]["akhir"] if stok_harian[h]["akhir"] is not None else stok_harian[h]["awal"]or 0
         })
     return kartu
 

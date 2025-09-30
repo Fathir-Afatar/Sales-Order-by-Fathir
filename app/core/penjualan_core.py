@@ -1,7 +1,7 @@
 from datetime import datetime
 import csv
 
-from app.core.product_core import get_field_by_kode, update_stok
+from app.core.product_core import get_field_by_kode, ubah_stok_dan_catat_log
 from app.core.stok_core import catat_log_stok, get_stok_terakhir
 from app.constants.config import get_connection
 conn = get_connection()
@@ -61,7 +61,7 @@ def proses_penjualan(member_id, daftar_barang, ongkos_kirim=0, voucher=0, metode
                     VALUES (?, ?, ?, ?, ?, ?)
                 """, (transaksi_id, item["produk_id"], nama_produk, jumlah, harga_jual, harga_jual * jumlah))
 
-                update_stok(item["produk_id"], -jumlah)
+                ubah_stok_dan_catat_log(item["produk_id"], -jumlah)
 
                 # Ambil stok sebelum update
                 stok_awal = stok # dari SELECT sebelumnya
@@ -117,6 +117,6 @@ def simpan_detail_penjualan(transaksi_id, item_list):
                 INSERT INTO detail_penjualan (transaksi_id, produk_id, nama_produk, jumlah, harga_satuan, subtotal)
                 VALUES (?, ?, ?, ?, ?, ?)   
         """, (transaksi_id, item["produk_id"], nama_produk, jumlah, harga_jual, subtottal))
-        update_stok(item["produk_id"], -jumlah)
+        ubah_stok_dan_catat_log(item["produk_id"], -jumlah)
     conn.commit()
     conn.close()

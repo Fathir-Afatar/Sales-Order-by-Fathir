@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.core.product_core import update_stok, tambah_stok, kurangi_stok
+from app.core.product_core import ubah_stok_dan_catat_log
 from app.core.stok_core import catat_log_stok, get_stok_terakhir
 
 from app.constants.config import get_connection
@@ -44,7 +44,7 @@ def tambah_pembelian(supplier_id: str, daftar_barang:list):
             """, (item["qty"], item["kode_produk"]))
 
             # Gunakan koneksi yang sama untuk update stok
-            update_stok(cursor, item["kode_produk"], item["qty"])
+            ubah_stok_dan_catat_log(cursor, item["kode_produk"], item["qty"])
              # Query ambil produk_id berdasarkan kode_produk           
             cursor.execute("SELECT id_produk FROM produk WHERE kode_produk = ?", (item["kode_produk"],))
             result = cursor.fetchone()
@@ -108,7 +108,7 @@ def get_pembelian_untuk_koreksi(pembelian_id):
 
 def hapus_pembelian(pembelian_id):
     try:
-        conn = get_connection
+        conn = get_connection()
         cursor = conn.cursor()
         # Ambil detail dulu untuk rollback ke stok
         cursor.execute("""
@@ -120,7 +120,7 @@ def hapus_pembelian(pembelian_id):
 
         for kode_produk, qty in detail:
             # Kurangi stok karena pembelian dibatalkan
-            kurangi_stok(kode_produk, qty)
+            ubah_stok_dan_catat_log(kode_produk, -qty, "PEMBATALAN")
 
         # Hapus detail dan header
         cursor.execute("DELETE FROM detail_pembelian WHERE pembelian_id = ?", (pembelian_id,))

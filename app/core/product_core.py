@@ -1,5 +1,6 @@
 import sqlite3
 from app.constants.config import get_connection
+from app.core.stok_core import catat_log_stok
 
 # Get Produk
 
@@ -105,25 +106,23 @@ def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_ju
     conn.close()
     return True
 
-# Tambah dan Kurangi stok
-def update_stok(cursor, kode_produk, delta):
-    if not isinstance(delta, int):
-        print("[ERROR] Delta stok harus integer")
-        return False
-    cursor.execute("SELECT stok FROM produk WHERE kode_produk =?", (kode_produk,))
+# Fungsi untuk log stok.
+def ubah_stok_dan_catat_log(cursor, kode_produk, delta, jenis_perubahan):
+    cursor.execute("SELECT stok FROM produk WHERE kode_produk = ?", (kode_produk,))
     result = cursor.fetchone()
     if not result:
         print(f"[ERROR] Produk {kode_produk} tidak ditemukan.")
         return False
-    stok_baru = max(0, result[0] + delta)
-    cursor.execute("UPDATE produk SET stok= ? WHERE kode_produk = ?", (stok_baru, kode_produk))
+    
+    stok_awal = result[0]
+    stok_akhir = max(0, stok_awal + delta)
+
+    cursor.execute("UPDATE produk SET stok = ? WHERE kode_produk = ?", (stok_akhir, kode_produk))
+    cursor.execute("SELECT id_produk FROM produk WHERE kode_produk = ?", (kode_produk,))
+    produk_id = cursor.fetchone()[0]
+
+    catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, jenis_perubahan)
     return True
-
-def tambah_stok(kode_produk, jumlah):
-    return update_stok(kode_produk, jumlah)
-
-def kurangi_stok(kode_produk, jumlah):
-    return update_stok(kode_produk, -jumlah)
 
 # Semua Produk
 
