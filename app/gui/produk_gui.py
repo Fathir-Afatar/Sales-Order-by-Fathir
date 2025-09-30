@@ -32,7 +32,10 @@ def build_form_produk_fields(form):
     entry_nama = tk.Entry(form)
     entry_kode = tk.Entry(form)
     entry_kategori = ttk.Combobox(form, values=kategori_list, state="readonly")
-    entry_kategori.set(kategori_list[0]) # Default pilihan
+    if kategori_list:   # Default pilihan
+        entry_kategori.set(kategori_list[0])
+    else:
+        entry_kategori.set("Kategori belum tersedia")
     entry_merk = tk.Entry(form)
     entry_harga_beli = tk.Entry(form)
     entry_harga_jual = tk.Entry(form)
@@ -432,8 +435,14 @@ def reset_filter():
     print("[INFO] Filter direset.")
     
 def on_tree_select(event):
-    if not entry_nama or not str(entry_nama):
-        print("[WARNING] entry_nama belum tersedia atau sudah dihapus.")
+    if not buka_form_tambah_produk or not isinstance(buka_form_tambah_produk, tk.Toplevel):
+        print("[INFO] Form edit belum aktif.")
+        return
+    
+    try:
+        entry_nama.delete(0, tk.END)
+    except tk.TclError:
+        print("[WARNING] entry_nama sudah tidak aktif atau sudah dihapus.")
         return
     selected = tree.focus()
     if not selected: return
@@ -448,9 +457,7 @@ def on_tree_select(event):
     entry_stok.delete(0, tk.END)
     entry_stok.insert(0, values[4])
 
-    if not buka_form_tambah_produk:
-        print("[INFO] Form edit belum aktif.")
-        return
+
     # ID disimpan untuk edit/delete
 
     global selected_id

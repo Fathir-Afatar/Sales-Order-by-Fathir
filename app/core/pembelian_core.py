@@ -1,6 +1,6 @@
 from datetime import datetime
 from app.core.product_core import ubah_stok_dan_catat_log
-from app.core.stok_core import catat_log_stok, get_stok_terakhir
+from app.core.stok_core import get_stok_terakhir
 
 from app.constants.config import get_connection
 
@@ -36,21 +36,15 @@ def tambah_pembelian(supplier_id: str, daftar_barang:list):
                            VALUES (?, ?, ?, ?)
                            """, (pembelian_id, item["kode_produk"], item["qty"], item["harga_beli"]))
 
-            # Ambil stok sebelum update
-            stok_awal = get_stok_terakhir(cursor, item["kode_produk"])
-            stok_akhir = stok_awal + item["qty"]
-            cursor.execute("""
-                UPDATE produk SET stok = stok + ? WHERE kode_produk = ?
-            """, (item["qty"], item["kode_produk"]))
-
             # Gunakan koneksi yang sama untuk update stok
-            ubah_stok_dan_catat_log(cursor, item["kode_produk"], item["qty"])
+            ubah_stok_dan_catat_log(cursor, item["kode_produk"], item["qty"], "MASUK")
+            
              # Query ambil produk_id berdasarkan kode_produk           
             cursor.execute("SELECT id_produk FROM produk WHERE kode_produk = ?", (item["kode_produk"],))
             result = cursor.fetchone()
             if result:
                 produk_id = result[0]
-                catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, "MASUK")
+                
             else:
                 print(f"[ERROR] Produk dengan kode'{item['kode_produk']}' tidak ditemukan.")
 

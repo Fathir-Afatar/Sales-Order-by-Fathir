@@ -109,20 +109,17 @@ def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_ju
 # Fungsi untuk log stok.
 def ubah_stok_dan_catat_log(cursor, kode_produk, delta, jenis_perubahan):
     cursor.execute("SELECT stok FROM produk WHERE kode_produk = ?", (kode_produk,))
-    result = cursor.fetchone()
-    if not result:
-        print(f"[ERROR] Produk {kode_produk} tidak ditemukan.")
-        return False
     
-    stok_awal = result[0]
-    stok_akhir = max(0, stok_awal + delta)
+    stok_awal = cursor.fetchone()[0]
+    stok_akhir = stok_awal + delta
 
     cursor.execute("UPDATE produk SET stok = ? WHERE kode_produk = ?", (stok_akhir, kode_produk))
     cursor.execute("SELECT id_produk FROM produk WHERE kode_produk = ?", (kode_produk,))
     produk_id = cursor.fetchone()[0]
-
+    print(f"[DEBUG] Update stok: {kode_produk} | Awal: {stok_awal} -> Akhir: {stok_akhir}")
     catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, jenis_perubahan)
     return True
+
 
 # Semua Produk
 

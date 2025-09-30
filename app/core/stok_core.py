@@ -10,6 +10,7 @@ from app.constants.config import get_connection
 # Note Stock Changes
 
 def catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, jenis_perubahan):
+    print(f"[LOG] {jenis_perubahan} | {produk_id} | {stok_awal} -> {stok_akhir}")
     tanggal = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
                    INSERT INTO log_stock(produk_id, tanggal, stok_awal, stok_akhir, jenis_perubahan)
@@ -69,6 +70,7 @@ def bentuk_kartu_stok(stok_harian, bulan, tahun): # Bentuk kartu stok dari hasil
     return kartu
 
 def generate_kartu_stok(produk_id, bulan, tahun): # FUngsi utama pemanggil semua
+    print("[DEBUG] Produk ID:", produk_id)
     conn = get_connection()
     cursor = conn.cursor()
     logs = ambil_log_stok_bulanan(cursor, produk_id, bulan, tahun)
