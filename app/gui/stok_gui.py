@@ -34,15 +34,32 @@ def ambil_filter_stok(barang_combo, bulan_combo, tahun_combo):
     return produk_id, bulan, tahun
 
 def isi_treeview_stok(tree, kartu):
+    tree.tag_configure("hari_ini", background="#dff0d8", foreground="black")
     tree.delete(*tree.get_children())
+    print("[DEBUG] Tipe Treeview:", type(tree))
+    print("[DEBUG] Tag hari_ini dikonfigurasi")
     for row in kartu:
-        tree.insert("", "end", values =(
-            row.get("tanggal"),
-            "",
-            f"{row.get('awal', 0):,}",
-            f"{row.get('masuk', 0):,}",
-            f"{row.get('akhir', 0):,}"
-        ))
+        tanggal = row.get("tanggal")
+        if row.get("hari_ini"):
+            tanggal += " (Hari Ini)"
+            tree.insert("", "end", values=(
+                tanggal,
+                "",
+                f"{row.get('awal', 0):,}",
+                f"{row.get('masuk', 0):,}",
+                f"{row.get('akhir', 0):,}"
+            ), tags=("hari_ini",))
+        else:
+            tree.insert("", "end", values=(
+                tanggal,
+                "",
+                f"{row.get('awal', 0):,}",
+                f"{row.get('masuk', 0):,}",
+                f"{row.get('akhir', 0):,}"
+            ))
+        if row.get("hari_ini"):
+            print("[DEBUG] Baris hari ini:", row)
+
 
 def buat_frame_stok(parent):
     frame = tk.Frame(parent)

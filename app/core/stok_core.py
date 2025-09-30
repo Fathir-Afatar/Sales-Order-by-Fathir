@@ -37,9 +37,9 @@ def ambil_log_stok_bulanan(cursor, produk_id, bulan, tahun): #Ambil log stok per
     return cursor.fetchall()
 
 def proses_stok_harian(logs, bulan, tahun): #Proses log menjadi stok harian
+    hari_ini = datetime.now().day
     stok_harian = {
-        str(i): {"awal": None, "akhir":None, "masuk":0, "keluar": 0}
-        for i in range(1, monthrange(tahun, bulan)[1] + 1)
+        str(i): {"awal": None, "akhir":None, "masuk":0, "keluar": 0,  "hari_ini": i == hari_ini} for i in range(1, monthrange(tahun, bulan)[1] + 1)
     }
 
     for tanggal_str, stok_awal, stok_akhir, jenis in logs:
