@@ -66,7 +66,7 @@ def buat_frame_supplier(parent):
 def refresh_tree(tree):
     tree.delete(*tree.get_children())
     for s in semua_supplier():
-        tree.insert("", tk.END, values=s)
+        tree.insert("", tk.END, values=(s["id_supplier"], s["nama_supplier"], s["alamat"], s["no_hp"]))
 
 # Tambah Supplier
 
@@ -93,7 +93,10 @@ def buka_form_tambah_supplier(tree, parent):
             messagebox.showerror("Error", "Nama supplier wajib diisi.")
             return
         
-        tambah_supplier(nama, alamat, no_hp)
+        data = {"nama_supplier": nama,
+                "alamat": alamat,
+                "no_hp": no_hp}
+        tambah_supplier(data)
         messagebox.showinfo("Berhasil", f"Supplier '{nama}' ditambahkan.")
         form.destroy()
         refresh_tree(tree)
@@ -143,7 +146,12 @@ def buka_form_edit_supplier(tree, parent):
             messagebox.showerror("Error", "Nama supplier wajib diisi.")
             return
         
-        edit_supplier(id_supplier, nama, alamat, no_hp)
+        data = {
+            "nama_supplier": nama,
+            "alamat": alamat,
+            "no_hp": no_hp
+        }
+        edit_supplier(id_supplier, data)
         messagebox.showinfo("Berhasil", f"Supplier '{nama}' berhasil diperbarui.")
         refresh_tree(tree)
         form.destroy()
