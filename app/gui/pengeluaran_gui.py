@@ -20,7 +20,7 @@ def open_calendar(entry_widget):
         top.destroy()
     Button(top, text="Pilih Tanggal", command=select_date).pack(pady=5)
 
-def tambah_pengeluaran(tampilkan_histori_callback):
+def buka_form_tambah_pengeluaran(tampilkan_histori_callback):
     form = tk.Toplevel()
     form.title("Tambah Pengeluaran")
     form.geometry("400x400")
@@ -51,18 +51,21 @@ def tambah_pengeluaran(tampilkan_histori_callback):
             if not tanggal or not nama or not kategori:
                 messagebox.showwarning("Validasi", "Tanggal, Nama, dan Kategori wajib diisi.")
                 return
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO pengeluaran (tanggal, nama_pengeluaran, nominal, keterangan, kategori)
-                VALUES (?, ?, ?, ?, ?)
-                """, (tanggal, nama, nominal, keterangan, kategori))
-            conn.commit()
-            conn.close()
+            
+            data = {
+                "tanggal": tanggal,
+                "nama_pengeluaran": nama,
+                "nominal": nominal,
+                "keterangan": keterangan,
+                "kategori": kategori,
+            }
+            tambah_pengeluaran(data)
 
             messagebox.showinfo("Sukses", "Pengeluaran berhasil ditambahkan.")
             form.destroy()
             tampilkan_histori_callback(semua_pengeluaran())
+            print("Data baru:", semua_pengeluaran())
+            print("Data yang akan disimpan:", data)
         except ValueError:
             messagebox.showerror("Error", "Nominal harus berupa angka.")
     ttk.Button(form, text="Simpan", command=simpan).pack(pady=20)
@@ -70,9 +73,15 @@ def tambah_pengeluaran(tampilkan_histori_callback):
 def tampilkan_histori(data_pengeluaran):
     tree.delete(*tree.get_children()) # clear semua isi lama
     for row in data_pengeluaran:
-        tree.insert("", "end", values=(row[1], row[2], row[5], f"Rp {float(row[3]):,}", row[4]), tags=(row[0],)) # row[0] = id_pengeluaran 
+        tree.insert("", "end", values=(
+            row["tanggal"],
+            row["nama_pengeluaran"],
+            row["kategori"],
+            f"Rp {float(row['nominal']):,}",
+            row["keterangan"]
+        ), tags=(row["id_pengeluaran"],)) # row[0] = id_pengeluaran 
         print("Data masuk ke Treeview:", len(data_pengeluaran))
-        print("Treeview values:", row[5], row[1], row[2], row[3], row[4])
+        print("Treeview values:", row["tanggal"], row["nama_pengeluaran"], row["kategori"], row["nominal"], row["keterangan"])
 
 def buat_frame_pengeluaran(parent):
     global tree
@@ -231,7 +240,15 @@ def buat_frame_pengeluaran(parent):
                 nominal = float(entries["Nominal"].get())
                 keterangan = entries["Keterangan"].get()
 
-                edit_pengeluaran(id_pengeluaran, tanggal, nama, kategori, nominal, keterangan)
+                data = {
+                    "tanggal": tanggal,
+                    "nama_pengeluaran": nama,
+                    "kategori": kategori,
+                    "nominal": nominal,
+                    "keterangan": keterangan
+                }
+                edit_pengeluaran(id_pengeluaran, data)
+
                 messagebox.showinfo("Sukses", "Pengeluaran berhasil diupdate.")
                 form.destroy()
                 tampilkan_histori(semua_pengeluaran())
@@ -242,7 +259,7 @@ def buat_frame_pengeluaran(parent):
     
     tk.Button(frame_btn, text="Edit", command=edit_pengeluaran_gui).pack(side=tk.LEFT, padx=10)
     tk.Button(frame_btn, text="Hapus", command=hapus_pengeluaran_gui).pack(side=tk.LEFT, padx=10)
-    tk.Button(frame_btn, text="Tambah", command=lambda:tambah_pengeluaran(tampilkan_histori)).pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_btn, text="Tambah", command=lambda:buka_form_tambah_pengeluaran(tampilkan_histori)).pack(side=tk.LEFT, padx=10)
     
     frame.pack(fill="both", expand=True)
 
