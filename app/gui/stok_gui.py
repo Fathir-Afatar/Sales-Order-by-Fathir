@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
-from app.core.stok_core import generate_kartu_stok, get_produk_id_by_nama, get_daftar_nama_barang, get_stok_akhir_semua_produk, cek_log_harian
+from app.core.stok_core import generate_kartu_stok, get_produk_id_by_nama, get_daftar_nama_barang, cek_log_harian, ambil_log_stok_bulanan, proses_stok_harian
 from app.constants.config import get_connection
+from app.core.product_core import semua_produk
 
 def build_treeview_stok(parent):
     tree = ttk.Treeview(parent, columns=("Tanggal", "Awal", "Masuk", "Keluar", "Akhir"), show="headings")
@@ -21,6 +22,8 @@ def build_treeview_ringkasan(parent):
 def ambil_filter_stok(barang_combo, bulan_combo, tahun_combo):
     nama_barang = barang_combo.get()
     bulan_index = bulan_combo.current()
+    print("[DEBUG] Filter bulan:", bulan_combo.get())
+    print("[DEBUG] Filter tahun:", tahun_combo.get())
     tahun_str = tahun_combo.get()
     if not nama_barang or bulan_index == -1 or not tahun_str:
         return None
@@ -44,17 +47,17 @@ def isi_treeview_stok(tree, kartu):
             tanggal += " (Hari Ini)"
             tree.insert("", "end", values=(
                 tanggal,
-                "",
                 f"{row.get('awal', 0):,}",
                 f"{row.get('masuk', 0):,}",
+                f"{row.get('keluar', 0):,}",
                 f"{row.get('akhir', 0):,}"
-            ), tags=("hari_ini",))
+            ), tags=("hari_ini",)if row.get("hari_ini") else ())
         else:
             tree.insert("", "end", values=(
                 tanggal,
-                "",
                 f"{row.get('awal', 0):,}",
                 f"{row.get('masuk', 0):,}",
+                f"{row.get('keluar', 0):,}",
                 f"{row.get('akhir', 0):,}"
             ))
         if row.get("hari_ini"):
@@ -130,8 +133,9 @@ def build_section_ringkasan_stok(parent):
     tree_ringkasan.pack(fill="both", expand=True)
 
     def tampilkan_ringkasan():
-        tanggal = tanggal_entry.get().strip()
-        tampilkan_stok_harian(tree_ringkasan, tanggal)
+        bulan = datetime.now().month
+        tahun = datetime.now().year
+        tampilkan_stok_harian(tree_ringkasan, bulan, tahun)
 
     def tampilkan_log_harian(treeview, tanggal):
         selected = treeview.focus()
@@ -168,14 +172,31 @@ def build_section_ringkasan_stok(parent):
     tk.Button(frame_ringkasan, text="Audit Log Hari ini", command=lambda: tampilkan_log_harian(tree_ringkasan, tanggal_entry.get().strip())).grid(row=0, column=3, padx=10)
 
 # 
-def tampilkan_stok_harian(treeview, tanggal = None):
-    if not tanggal:
-        tanggal = datetime.now().strftime("%Y-%m-%d")
-    data_stok = get_stok_akhir_semua_produk(tanggal)
-
+def tampilkan_stok_harian(treeview, bulan, tahun):
+    conn = get_connection()
+    cursor = conn.cursor()
+    produk_list = semua_produk()
+    
     treeview.delete(*treeview.get_children())
-    for row in data_stok:
-        treeview.insert("", "end", values=(row["id"], row["nama"], f"{row['stok']:,}"))
+
+    hari_ini = datetime.now().day
+
+    for produk in produk_list:
+        produk_id = produk["id_produk"]
+        nama = produk["nama_produk"]
+        logs = ambil_log_stok_bulanan(cursor, produk_id, bulan, tahun)
+        stok_harian = proses_stok_harian(logs, bulan, tahun)
+
+        if str(hari_ini) in stok_harian:
+            row = stok_harian[str(hari_ini)]
+            awal = row["awal"] if row["awal"] is not None else 0
+            akhir = row["akhir"] if row["akhir"] is not None else 0
+        else:
+            awal = akhir = 0
+        
+        treeview.insert("", "end", values=(produk_id, nama, f"{awal:,}", f"{akhir:,}"))
+    
+    conn.close()
 
 if __name__ == "__main__":
     buat_frame_stok()

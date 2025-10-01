@@ -118,9 +118,9 @@ def ubah_stok_dan_catat_log(cursor, kode_produk, delta, jenis_perubahan):
     produk_id = cursor.fetchone()[0]
     print(f"[DEBUG] Update stok: {kode_produk} | Awal: {stok_awal} -> Akhir: {stok_akhir}")
     catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, jenis_perubahan)
+    print("[DEBUG] Catat log:", produk_id, stok_awal, stok_akhir, jenis_perubahan)
+    print("[DEBUG] Kirim delta:", delta, "| Jenis:", jenis_perubahan)
     return True
-
-
 # Semua Produk
 
 def semua_produk():

@@ -31,29 +31,35 @@ def ambil_log_stok_bulanan(cursor, produk_id, bulan, tahun): #Ambil log stok per
     cursor.execute("""
         SELECT tanggal, stok_awal, stok_akhir, jenis_perubahan
         FROM log_stock
-        WHERE produk_id = ? AND tanggal BETWEEn ? AND ?
+        WHERE produk_id = ? AND DATE(tanggal) BETWEEN ? AND ?
         ORDER BY tanggal ASC
     """, (produk_id, tanggal_awal, tanggal_akhir))
     return cursor.fetchall()
 
 def proses_stok_harian(logs, bulan, tahun): #Proses log menjadi stok harian
+
     hari_ini = datetime.now().day
     stok_harian = {
         str(i): {"awal": None, "akhir":None, "masuk":0, "keluar": 0,  "hari_ini": i == hari_ini} for i in range(1, monthrange(tahun, bulan)[1] + 1)
     }
 
     for tanggal_str, stok_awal, stok_akhir, jenis in logs:
-        hari = str(int(tanggal_str[8:10])) # Ambil tanggal (01-31)
-
+        jenis =str(jenis).strip().upper()
+        hari = str(datetime.strptime(tanggal_str, "%Y-%m-%d %H:%M:%S").day) # Ambil tanggal (01-31)
+        print(f"[DEBUG] Tanggal string: {tanggal_str}")
+        print(f"[DEBUG] Hari yang diproses: {hari}")
         if stok_harian[hari]["awal"] is None:
             stok_harian[hari]["awal"] = stok_awal
         stok_harian[hari]["akhir"] = stok_akhir
-
-        selisih =stok_akhir - stok_awal
+        print(f"[DEBUG] Jenis perubahan (normalisasi): {repr(jenis)}")
         if jenis == "MASUK":
-            stok_harian[hari]["masuk"] += abs(selisih)
+            stok_harian[hari]["masuk"] += stok_akhir - stok_awal
         elif jenis == "KELUAR":
-            stok_harian[hari]["keluar"] += abs(selisih)
+            stok_harian[hari]["keluar"] += stok_awal - stok_akhir
+        else:
+            print(f"[DEBUG] Hari {hari} | Awal: {stok_awal} | Akhir: {stok_akhir} | Jenis: {jenis}")
+            print(f"[DEBUG] Masuk: {stok_harian[hari]['masuk']} | Keluar : {stok_harian[hari]['keluar']}")
+            print(f"[DEBUG] Jenis perubahan:", repr(jenis))
     return stok_harian
 
 def bentuk_kartu_stok(stok_harian, bulan, tahun): # Bentuk kartu stok dari hasil proses
@@ -71,10 +77,14 @@ def bentuk_kartu_stok(stok_harian, bulan, tahun): # Bentuk kartu stok dari hasil
 
 def generate_kartu_stok(produk_id, bulan, tahun): # FUngsi utama pemanggil semua
     print("[DEBUG] Produk ID:", produk_id)
+
     conn = get_connection()
     cursor = conn.cursor()
     logs = ambil_log_stok_bulanan(cursor, produk_id, bulan, tahun)
     conn.close()
+    print("[DEBUG] Jumlah log ditemukan:", len(logs))
+    for log in logs:
+        print("[DEBUG] Log:", log)
 
     stok_harian = proses_stok_harian(logs, bulan, tahun)
     return bentuk_kartu_stok(stok_harian, bulan, tahun)
