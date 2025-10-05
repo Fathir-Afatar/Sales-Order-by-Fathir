@@ -10,7 +10,7 @@ conn = get_connection()
 def hitung_total_penjualan(daftar_barang):
     total = 0
     for item in daftar_barang:
-        total += item["harga_jual"] * item["jumlah"]
+        total += item["harga_satuan"] * item["jumlah"]
     return total
 
 # ── Proses Penjualan ──
@@ -28,7 +28,7 @@ def proses_penjualan(data):
         catatan = data.get("catatan", "-")
         status = data.get("status", "DRAFT")
 
-        total = hitung_total_penjualan(daftar_barang, cursor) + ongkos_kirim
+        total = hitung_total_penjualan(daftar_barang) + ongkos_kirim
 
         # Simpan transaksi utama
         cursor.execute("""
@@ -53,13 +53,16 @@ def proses_penjualan(data):
             if stok < jumlah:
                 raise ValueError(f"Stok Produk ID {produk_id} tidak cukup.")
             
-            subtotal = harga_jual * jumlah
+            #subtotal = harga_jual * jumlah
+            print("[DEBUG] Keys item:", list(item.keys()))
+            print("[DEBUG] Simpan detail:", item)
+            print("[DEBUG] Nama produk dari DB:", nama_produk)
             cursor.execute("""
                     INSERT INTO detail_penjualan (transaksi_id, produk_id, nama_produk, jumlah, harga_satuan, subtotal)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (transaksi_id, item["produk_id"], nama_produk, jumlah, harga_jual, harga_jual * jumlah))
+                """, (transaksi_id, item["produk_id"], nama_produk, item["jumlah"], item["harga_satuan"], item["subtotal"]))
 
-            ubah_stok_dan_catat_log(item["produk_id"], -jumlah)
+            ubah_stok_dan_catat_log(cursor, item["produk_id"], -jumlah, "KELUAR")
 
                 # Ambil stok sebelum update
             stok_awal = stok # dari SELECT sebelumnya
