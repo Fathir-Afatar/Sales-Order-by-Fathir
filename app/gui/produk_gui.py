@@ -393,6 +393,10 @@ def build_treeview_produk(frame):
     tree.configure(xscrollcommand=scroll_x.set)
     scroll_x.pack(side="bottom", fill="x")
 
+    scroll_y = ttk.Scrollbar(tree_container, orient="vertical", command=tree.yview)
+    tree.configure(yscrollcommand=scroll_y.set)
+    scroll_y.pack(side="right", fill="y")
+
 
 def refresh_tree(kategori=None, nama_produk=None):
     print("[INFO] Memuat ulang daftar produk . . .")
