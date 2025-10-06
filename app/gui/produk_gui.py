@@ -363,6 +363,10 @@ def build_treeview_produk(frame):
     global tree
 
     columns = ("id", "nama", "kode", "kategori", "merk", "harga_beli", "harga_jual", "stok", "berat")
+
+    tree_container = tk.Frame(frame)
+    tree_container.pack(fill="both", expand=True, padx=10, pady=10)
+    
     tree = ttk.Treeview(frame, columns=columns, show="headings")
 
     labels = {
@@ -385,7 +389,7 @@ def build_treeview_produk(frame):
     tree.pack(fill="both", expand=True, padx=10, pady=10)
     tree.bind("<<TreeviewSelect>>", on_tree_select)
 
-    scroll_x = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+    scroll_x = ttk.Scrollbar(tree_container, orient="horizontal", command=tree.xview)
     tree.configure(xscrollcommand=scroll_x.set)
     scroll_x.pack(side="bottom", fill="x")
 
