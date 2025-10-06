@@ -97,7 +97,7 @@ def edit_member_gui(parent):
     if not selected_item:
         messagebox.showwarning("Pilih Member yang ingin diedit.")
         return
-    values = tree.item(selected_id)["values"]
+    values = tree.item(selected_item)["values"]
     if not values or len(values) < 6:
         print("[DEBUG] Tidak ada data valid.")
         return
@@ -113,12 +113,12 @@ def edit_member_gui(parent):
         entry.pack(fill='x')
         return entry
     
-    entry_kode_member = create_entry("Kode Member", values[0])
-    entry_nama = create_entry("Nama", values[1])
-    entry_nomor = create_entry("Nomor HP", values[2])
-    entry_alamat = create_entry("Alamat", values[3])
-    entry_tipe = create_entry("Tipe Member", values[4])
-    entry_ranting = create_entry("Ranting", values[5])
+    entry_kode_member = create_entry("Kode Member", values[1])
+    entry_nama = create_entry("Nama", values[2])
+    entry_nomor = create_entry("Nomor HP", values[3])
+    entry_alamat = create_entry("Alamat", values[4])
+    entry_tipe = create_entry("Tipe Member", values[5])
+    entry_ranting = create_entry("Ranting", values[6])
 
     def simpan_perubahan():
         try:
@@ -168,6 +168,7 @@ def buat_frame_member(parent):
     build_filter_area(frame)
     build_search_area(frame)
     build_treeview(frame)
+    build_footer(frame)
 
     refresh_tree()
     print("[DEBUG] data awal", semua_member())
@@ -218,9 +219,11 @@ def build_filter_area(frame):
         
         tree.delete(*tree.get_children())
         for row in hasil:
-            tree.insert("", tk.END, iid=row["id_member"], values=(
+            print("[DEBUG] row:", row)
+            tree.insert("", tk.END, iid=row["id_member"], values=(row["id_member"],
                 row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"]
             ))
+
 
     tk.Button(frame_filter, text="Reset Filter", command=reset_filter).pack(side=tk.LEFT, padx=4)        
     tk.Button(frame_filter, text="Filter", command=filter_data).pack(side='left', padx=5)
@@ -245,7 +248,7 @@ def build_search_area(frame):
         hasil = cari_member(keyword)
         tree.delete(*tree.get_children())
         for row in hasil:
-            tree.insert("", tk.END, iid=row["id_member"], values=(
+            tree.insert("", tk.END, iid=row["id_member"], values=(row["id_member"],
                 row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"] 
             ))
 
