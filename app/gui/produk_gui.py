@@ -363,11 +363,22 @@ def build_treeview_produk(frame):
     global tree
 
     columns = ("id", "nama", "kode", "kategori", "merk", "harga_beli", "harga_jual", "stok", "berat")
-
+    
     tree_container = tk.Frame(frame)
     tree_container.pack(fill="both", expand=True, padx=10, pady=10)
-    
-    tree = ttk.Treeview(frame, columns=columns, show="headings")
+
+    scroll_y = ttk.Scrollbar(tree_container, orient="vertical")
+    scroll_y.grid(row=0, column=1, sticky="ns")
+
+    scroll_x = ttk.Scrollbar(tree_container, orient="horizontal")
+    scroll_x.grid(row=1, column=0, sticky="ew")
+
+    tree = ttk.Treeview(tree_container, columns=columns, show="headings",
+                        yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
+    tree.grid(row=0, column=0, sticky="nsew")
+
+    scroll_y.config(command=tree.yview)
+    scroll_x.config(command=tree.xview)
 
     labels = {
         "nama": "Nama", "kode": "Kode", "kategori": "Kategori", "merk": "Merk",
@@ -386,17 +397,10 @@ def build_treeview_produk(frame):
     tree.column("berat", anchor="center", width=80)
 
 
-    tree.pack(fill="both", expand=True, padx=10, pady=10)
     tree.bind("<<TreeviewSelect>>", on_tree_select)
 
-    scroll_x = ttk.Scrollbar(tree_container, orient="horizontal", command=tree.xview)
-    tree.configure(xscrollcommand=scroll_x.set)
-    scroll_x.pack(side="bottom", fill="x")
-
-    scroll_y = ttk.Scrollbar(tree_container, orient="vertical", command=tree.yview)
-    tree.configure(yscrollcommand=scroll_y.set)
-    scroll_y.pack(side="right", fill="y")
-
+    tree_container.grid_rowconfigure(0, weight=1)
+    tree_container.grid_columnconfigure(0, weight=1)
 
 def refresh_tree(kategori=None, nama_produk=None):
     print("[INFO] Memuat ulang daftar produk . . .")
