@@ -24,6 +24,16 @@ def main():
     content_frame = tk.Frame(root, bg="white")
     content_frame.pack(side="right", fill="both", expand=True)
 
+    def tampilkan_menu_utama():
+        for widget in content_frame.winfo_children():
+            widget.destroy()
+        
+        menu_frame = tk.Frame(content_frame, bg="white")
+        menu_frame.pack(fill="both", expand=True)
+
+        tk.Label(menu_frame, text="Selamat Datang di POS Pintar by Fathir", font=("Arial", 18, "bold"), bg="white").pack(pady=30)
+        tk.Label(menu_frame, text="Silakan Pilih modul dari menu di sebelah kiri.", font=("Arial", 12), bg="white").pack(pady=10)
+
     # Fungsi untuk menampilkan frame dari modul
 
     def tampilkan_frame(frame_func):
@@ -55,7 +65,7 @@ def main():
 
     # Tampilkan default frame
 
-    tampilkan_frame(buat_frame_penjualan)
+    tampilkan_menu_utama()
 
     root.mainloop()
 
