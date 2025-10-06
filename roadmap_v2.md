@@ -59,6 +59,10 @@ Membuat executable (.exe) dengan PyInstaler untuk distribusi kantor.
 - [ ] Perubahan design di tab Rincian modul Penjualan. Cetak ulang nota berada didalam tombol Lihat Detail.
 - [ ] Gunakan 'format_nota_thermal()' untuk preview nota dan Lihat detail.
 
+## Format Nota & Printer
+- [ ] Buat pengaturan untuk format nota.
+- [ ] Buat pengaturan untuk deteksi printer thermal
+
 ## Struktur Modular
 - [ ] Pisahkan file core dengan GUI semua modul
 - [ ] Isi 'README.md' dan 'journey.md' untuk dokumentasi teknis dan catatan
