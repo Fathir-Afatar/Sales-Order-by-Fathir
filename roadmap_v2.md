@@ -36,14 +36,15 @@ Membuat executable (.exe) dengan PyInstaler untuk distribusi kantor.
 
 ---
 
-## Laporan & Analitik
+## Laporan & Analitik (Modul Penjualan)
+- [ ] Refactor Modul Penjualan
 - [ ] Aktifkan tab:
   - Penjualan
   - Pembelian
   - Pengeluaran
 - [ ] Tambahkan tab **Laporan Member**:
   - Total Belanja
-  - Kontrobusi profit
+  - Kontribusi profit
   - Frekuensi transaksi
 
 ---
