@@ -26,6 +26,7 @@ _"Entah kenapa aku ingin memajang hasil printer kecil ini sebagai langkah pertam
     Setelah debugging bertahap, semua modul berhasul disatukan ke dalam satu aplikasi utama. Navigasi lancar, layout rapi, dan struktur modular siap untuk pengembangan lanjutan.
 -[x] Aplikasi Pertama dari Pyinstaller (22 September 2025)
 -[x] Percobaan Pertama di Kantor (27 September 2025)
+-[x] Penyusunan dekstop versi 2 sebelum Migrasi (6 Oktober 2025)
 -[ ] Migrasi ke web (fase berikutnya)
 
 
