@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import pandas as pd
-from app.core.product_core import tambah_produk, semua_produk,  update_produk, hapus_produk, bersihkan_angka, get_kategori_id_by_nama, ambil_semua_kategori, ambil_produk_by_kategori_id, tambah_kategori, get_produk_by_id
+from app.core.product_core import tambah_produk, semua_produk,  update_produk, hapus_produk, bersihkan_angka, get_kategori_nama_by_id, ambil_semua_kategori, ambil_produk_by_kategori_id, tambah_kategori, get_produk_by_id, get_kategori_id_by_nama
 
 
 def buka_form_tambah_produk(parent):
@@ -31,20 +31,17 @@ def build_form_produk_fields(form):
     kategori_list = ambil_semua_kategori()
     entry_nama = tk.Entry(form)
     entry_kode = tk.Entry(form)
-    entry_kategori = ttk.Combobox(form, values=kategori_list, state="readonly")
-    if kategori_list:   # Default pilihan
-        entry_kategori.set(kategori_list[0])
-    else:
-        entry_kategori.set("Kategori belum tersedia")
+    combo_kategori = ttk.Combobox(form, values=kategori_list, state="readonly")
+    combo_kategori.set(kategori_list[0] if kategori_list else "(Belum Ada Kategori)")
     entry_merk = tk.Entry(form)
     entry_harga_beli = tk.Entry(form)
     entry_harga_jual = tk.Entry(form)
     entry_stok = tk.Entry(form)
     entry_berat = tk.Entry(form)
 
-    entries = [entry_nama, entry_kode, entry_kategori, entry_merk, entry_harga_beli, entry_harga_jual, entry_stok, entry_berat]
+    entries = [entry_nama, entry_kode, combo_kategori, entry_merk, entry_harga_beli, entry_harga_jual, entry_stok, entry_berat]
 
-    labels = ["Nama", "Kode", "Kategori ID", "Merk", "Harga Beli", "Harga Jual", "Stok", "Berat"]
+    labels = ["Nama", "Kode", "Kategori", "Merk", "Harga Beli", "Harga Jual", "Stok", "Berat"]
 
     for i, (label_text, entry) in enumerate(zip(labels, entries)):
         tk.Label(form, text=label_text).grid(row=i, column=0, padx=(30,10), pady=5, sticky="e")
@@ -65,7 +62,7 @@ def build_form_produk_buttons(form):
             messagebox.showwarning("Kategori Belum Dipilih", "Silakan tambahkan kategori terlebih dahulu.")
             return
 
-        kategori_id = get_kategori_id_by_nama(nama_kategori)
+        kategori_id = get_kategori_nama_by_id(nama_kategori)
         if kategori_id is None:
             messagebox.showerror("Kategori Tidak Valid", f"Kategori '{nama_kategori}' tidak ditemukan.")
             print("Debug kategori:", repr(nama_kategori))
@@ -135,11 +132,16 @@ def buka_form_edit_produk(parent):
     values = tree.item(selected_item[0], "values")
     selected_id = values[0]
     print("Selected ID:", selected_id)
+
     produk = get_produk_by_id(selected_id)
+    print("[DEBUG] produk:", produk)
     if not produk:
         messagebox.showerror("Produk Tidak Ditemukan", f"Tidak ada produk dengan ID {selected_id}.")
         return
     
+    kategori_nama = get_kategori_nama_by_id(produk["kategori_produk"])
+    produk["kategori_nama"] = kategori_nama
+
     print("[DEBUG] Tipe Produk:", type(produk))
     form_edit = tk.Toplevel(parent)
     form_edit.title("Edit Produk")
@@ -155,30 +157,58 @@ def buka_form_edit_produk(parent):
     tk.Button(form_edit, text="Simpan Perubahan", command=lambda: simpan_perubahan_produk(form_edit, selected_id, entries)).grid(row=len(entries), column=0, columnspan=2, pady=20, padx=30)
 
 def build_edit_form_fields(form, produk):
-    labels = ["Nama", "Kode", "Kategori ID", "Merk", "Harga Beli", "Harga Jual", "Stok", "Berat"]
-    keys = ["nama_produk", "kode_produk", "kategori_id", "merk", "harga_beli", "harga_jual", "stok", "berat"]
+    labels = ["Nama", "Kode", "Kategori ", "Merk", "Harga Beli", "Harga Jual", "Stok", "Berat"]
+    keys = ["nama_produk", "kode_produk", "kategori_nama", "merk", "harga_beli", "harga_jual", "stok", "berat"]
     entries = []
+    kategori_list = ambil_semua_kategori()
 
     for i, (label_text, key) in enumerate(zip(labels, keys)):
         tk.Label(form, text=label_text).grid(row=i, column=0, padx=(30, 10), pady=5, sticky="e")
-        entry = tk.Entry(form)
-        entry.insert(0, str(produk.get(key, "")))
-        entry.grid(row=i, column=1, padx=(10,30), pady=5, sticky="w")
-        entries.append(entry)
+
+        if key == "kategori_nama":
+            combo = ttk.Combobox(form, values=kategori_list, state="readonly")
+            combo.set(produk.get(key, "")) # set nilai awal
+
+            combo.grid(row=i, column=1, padx=(10,30), pady=5, sticky="w")
+            entries.append(combo)
+        else:
+            entry = tk.Entry(form)
+            entry.insert(0, str(produk.get(key, "")))
+            entry.grid(row=i, column=1, padx=(10,30), pady=5, sticky="w")
+            entries.append(entry)
+        
+    for i, entry in enumerate(entries):
+        print(f"[DEBUG] Entry {i}: {entry.get()}")
+
     return entries
 
 def simpan_perubahan_produk(form, id_produk, entries):
-    labels = ["Nama", "Kode", "Kategori ID", "Merk", "Harga Beli", "Harga Jual", "Stok", "Berat"]
+    import traceback
+    traceback.print_stack()
+    labels = ["Nama", "Kode", "Kategori", "Merk", "Harga Beli", "Harga Jual", "Stok", "Berat"]
+    print("[DEBUG] Mulai simpan_perubahan_produk")
+    print("[DEBUG] Entry 2 (kategori):", entries[2].get())
     for i, label in enumerate(labels):
         if entries[i].get().strip() == "":
             messagebox.showerror("Input Kosong", f"{label} tidak boleh kosong.")
             return
 
     try:
+        kategori_nama = entries[2].get().strip()
+        kategori_id = get_kategori_id_by_nama(kategori_nama)
+
+        if kategori_id is None:
+            messagebox.showerror("Kategori Tidak Valid", f"Kategori '{kategori_nama}' tidak ditemukan.")
+            return
+        print("[DEBUG] kategori_nama:", kategori_nama)
+        print("[DEBUG] kategori_id:", kategori_id)
+        for i, entry in enumerate(entries):
+            print(f"[DEBUG] Entry {i}: '{entry.get().strip()}'")
+
         data = {
             "nama": entries[0].get().strip(),
             "kode": entries[1].get().strip(),
-            "kategori_id": int(entries[2].get().strip()),
+            "kategori_id": kategori_id,
             "merk": entries[3].get().strip(),
             "harga_beli": bersihkan_angka(entries[4].get()),
             "harga_jual": bersihkan_angka(entries[5].get()),
@@ -223,44 +253,6 @@ def update_produk_by_id(id_produk, data):
         print(f"Error saat update produk: {e}")
         return False
 
-def simpan_perubahan_produk(form, id_produk, entries):
-    for i, label in enumerate(["Nama", "Kode", "Kategori", "Merk", "harga Beli", "Harga Jual", "Stok", "Berat"]):
-        print(f"[DEBUG] {label}: '{entries[i].get().strip()}'")
-        if entries[i].get().strip() == "":
-            messagebox.showerror("Input Kosong", f"{label} tidak boleh kosong.")
-            return
-    try:
-        data = {
-            "nama":entries[0].get().strip(),
-            "kode": entries[1].get().strip(),
-            "kategori_id": int(entries[2].get().strip()),
-            "merk": entries[3].get().strip(),
-            "harga_beli": bersihkan_angka(entries[4].get()),
-            "harga_jual": bersihkan_angka(entries[5].get()),
-            "stok": int(entries[6].get().strip()),
-            "berat": float(entries[7].get().strip())
-        }
-        
-    except ValueError as e:
-        messagebox.showerror("Input Invalid", f"Pastikan semua angka valid: {e}")
-        return
-
-    if data["harga_beli"] is None or data["harga_jual"] is None:
-        messagebox.showerror("Input Invalid", "Pastikan harga beli dan jual berupa angka valid.")
-        return
-
-    # Update ke database
-    print("Data yang dikirim ke update_produk_by_id:")
-    for k, v in data.items():
-        print(f"{k}: {v} (type : {type(v)})")
-
-    if update_produk_by_id(id_produk, data):
-        messagebox.showinfo("Berhasil", f"Produk '{data['nama']}' berhasil diperbarui.")
-        form.destroy()
-        refresh_tree()
-    else:
-        print("Gagal", "Gagal memperbarui produk.")
-    
 # Untuk hapus produk
 def hapus_produk_gui():
     if not selected_id:
@@ -313,7 +305,8 @@ def build_kontrol_produk(frame):
     frame_kontrol_grid = tk.Frame(frame_kontrol, bg="#f4f4f4")
     frame_kontrol_grid.pack()
 
-
+    tk.Label(frame_kontrol_grid, text="Nama Produk:").grid(row=0, column=0, padx=5, sticky="e")
+    
     # Entry cari
     entry_cari = tk.Entry(frame_kontrol_grid, width=20)
     entry_cari.grid(row=0, column=1, padx=5)
@@ -354,7 +347,10 @@ def build_filter_produk(frame):
     frame_filter.pack(pady=10)
 
     tk.Label(frame_filter, text="Nama Kategori:").grid(row=0, column=2, padx=5)
-    entry_filter_kategori = tk.Entry(frame_filter)
+
+    kategori_list = ambil_semua_kategori()
+
+    entry_filter_kategori = ttk.Combobox(frame_filter, values=kategori_list, state="readonly")
     entry_filter_kategori.grid(row=0, column=3, padx=5)
 
     tk.Button(frame_filter, text="Terapkan Filter", command=filter_produk_gui).grid(row=0, column=4, padx=5)
@@ -430,7 +426,7 @@ def filter_produk_by_kategori(nama_kategori):
     if nama_kategori == "Semua":
         produk_list = semua_produk()
     else:
-        kategori_id = get_kategori_id_by_nama(nama_kategori)
+        kategori_id = get_kategori_nama_by_id(nama_kategori)
         produk_list = ambil_produk_by_kategori_id(kategori_id)
     for p in produk_list:
         tree.insert("", tk.END, values=(p["id_produk"], p.get("nama_produk", ""), p.get("kode_produk", ""), nama_kategori, p.get("merk", ""), format_rupiah(p.get("harga_beli", 0)), format_rupiah(p.get("harga_jual", 0)), p.get("stok", 0), p.get("berat",0)))
@@ -441,6 +437,7 @@ def cari_produk_nama():
 
 
 def reset_filter():
+    entry_filter_kategori.set("")
     entry_filter_kategori.delete(0, tk.END) # Kosongkan pilihan kategori
     entry_cari.delete(0, tk.END)
     refresh_tree() # Tampilkan semua data

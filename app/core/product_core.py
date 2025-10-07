@@ -165,13 +165,13 @@ def bersihkan_angka(nilai):
         print("[ERROR] Gagal parsing angka:", nilai, e)
         return None
 
-def get_kategori_id_by_nama(nama_kategori):
+def get_kategori_nama_by_id(id_kategori):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id_kategori FROM kategori WHERE nama_kategori = ?", (nama_kategori,))
+    cursor.execute("SELECT nama_kategori FROM kategori WHERE id_kategori = ?", (id_kategori,))
     result = cursor.fetchone()
     conn.close()
-    return result[0] if result else None
+    return result[0] if result else "(Kategori Tidak Ditemukan)"
 
 def ambil_semua_kategori():
     conn = get_connection()
@@ -228,3 +228,13 @@ def get_produk_by_id(id_produk):
 
 def get_harga_beli(kode_produk):
     return get_field_by_kode(kode_produk, "harga_beli")
+
+def get_kategori_id_by_nama(nama_kategori):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id_kategori FROM kategori WHERE nama_kategori = ?", (nama_kategori,))
+    result = cursor.fetchone()
+    conn.close()
+    print("[DEBUG] Query kategori:", nama_kategori, "->", result)
+    return result[0] if result else None
+
