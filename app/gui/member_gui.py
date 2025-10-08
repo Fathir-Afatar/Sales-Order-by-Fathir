@@ -156,8 +156,6 @@ def hapus_member_gui():
             messagebox.showerror("Gagal Hapus", str(e))
 
 def buat_frame_member(parent, set_judul_modul):
-    semua = semua_member()
-
     print("[DEBUG] fungsi buat_frame_member dimulai.")
     global window, entry_map, entry_nama, entry_nomor, entry_alamat, entry_tipe, entry_ranting 
     global tree, entries, selected_id, entry_kode_member

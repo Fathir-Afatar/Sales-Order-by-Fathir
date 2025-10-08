@@ -6,7 +6,7 @@ import sys
 print("PYTHON PATH:", sys.path)
 
 # Setup Dasar
-def buat_frame_supplier(parent):
+def buat_frame_supplier(parent, set_judul_modul):
     frame = tk.Frame(parent, bg="#f4f4f4")
 
     # Frame atas: Tambah + Filter
@@ -62,6 +62,8 @@ def buat_frame_supplier(parent):
 
     refresh_tree(tree)
     frame.pack(fill="both", expand=True)
+
+    set_judul_modul("Supplier")
 
 def refresh_tree(tree):
     tree.delete(*tree.get_children())
