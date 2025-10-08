@@ -7,7 +7,7 @@ from app.constants.config import get_connection
 from tkinter import simpledialog
 
 
-def buat_frame_pembelian(parent):
+def buat_frame_pembelian(parent, set_judul_modul):
     frame = tk.Frame(parent, bg="#f4f4f4")
     combo_supplier, supplier_map = build_supplier_section(frame)
     tree_input, entry_cari, reset_pencarian = build_produk_section(frame)
@@ -20,6 +20,8 @@ def buat_frame_pembelian(parent):
     btn_simpan.pack(pady=5)
 
     frame.pack(fill="both", expand=True)
+    
+    set_judul_modul("Pembelian")
 
 def build_supplier_section(frame):
     font_normal = ("Segoe UI", 10)
