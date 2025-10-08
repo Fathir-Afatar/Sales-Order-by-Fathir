@@ -155,7 +155,9 @@ def hapus_member_gui():
         except Exception as e:
             messagebox.showerror("Gagal Hapus", str(e))
 
-def buat_frame_member(parent):
+def buat_frame_member(parent, set_judul_modul):
+    semua = semua_member()
+
     print("[DEBUG] fungsi buat_frame_member dimulai.")
     global window, entry_map, entry_nama, entry_nomor, entry_alamat, entry_tipe, entry_ranting 
     global tree, entries, selected_id, entry_kode_member
@@ -173,6 +175,8 @@ def buat_frame_member(parent):
     refresh_tree()
     print("[DEBUG] data awal", semua_member())
     frame.pack(fill="both", expand=True)
+
+    set_judul_modul("Member")
 
 def build_header(frame):
     # Header dan Tombol Aksi

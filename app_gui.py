@@ -12,17 +12,34 @@ from app.gui.penjualan_gui import buat_frame_penjualan
 from app.gui.stok_gui import buat_frame_stok
 from app.gui.laporan_gui import buat_frame_laporan
 
+judul_modul_label = None
+judul_frame = None
 def main():
     root = tk.Tk()
     root.title("POS Pintar by Fathir")
     root.geometry("1200x700")
 
     # Frame utama: navigasi kiri + konten kanan
-    nav_frame = tk.Frame(root, bg="#f0f0f0", width=200)
-    nav_frame.pack(side="left", fill="y")
 
-    content_frame = tk.Frame(root, bg="white")
+    main_frame = tk.Frame(root, bg="white")
+    main_frame.pack(side="right", fill="both", expand=True)
+
+    global judul_modul_label, judul_frame
+    judul_frame = tk.Frame(main_frame, bg="white")
+    judul_frame.pack(fill="x")
+
+    content_frame = tk.Frame(main_frame, bg="white")
     content_frame.pack(side="right", fill="both", expand=True)
+
+    judul_modul_label = tk.Label(judul_frame, text="", font=("Arial", 16, "bold"), bg="white", anchor="center", justify="center")
+    judul_modul_label.pack(fill="x", padx=20, pady=(10, 5))
+
+    def set_judul_modul(nama, jumlah=None):
+        global judul_modul_label
+        teks = f"📌 Modul {nama}"
+        if jumlah is not None:
+            teks += f" ({jumlah} item)"
+        judul_modul_label.config(text=teks)
 
     def tampilkan_menu_utama():
         for widget in content_frame.winfo_children():
@@ -39,8 +56,9 @@ def main():
     def tampilkan_frame(frame_func):
         for widget in content_frame.winfo_children():
             widget.destroy()
+
         try:
-            frame_func(content_frame)
+            frame_func(content_frame, set_judul_modul) # Kirim fungsi ke Modul
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -60,7 +78,7 @@ def main():
     ]
 
     for label, func in tombol_navigasi:
-        tk.Button(nav_frame, text=label, font=("Arial", 11), width=20, pady=5,
+        tk.Button(main_frame, text=label, font=("Arial", 11), width=20, pady=5,
                   command=lambda f=func:tampilkan_frame(f)).pack(pady=2)
 
     # Tampilkan default frame
