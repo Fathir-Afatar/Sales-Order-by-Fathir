@@ -3,9 +3,11 @@ from tkinter import ttk
 from datetime import datetime
 from app.core.laporan_core import get_ringkasan_laporan
 
-def buat_frame_laporan(parent):
+def buat_frame_laporan(parent, set_judul_modul):
     frame = tk.Frame(parent)
     frame.pack(fill="both", expand=True)
+
+    set_judul_modul("Laporan")
 
     notebook = ttk.Notebook(frame)
     notebook.pack(fill="both", expand=True)
