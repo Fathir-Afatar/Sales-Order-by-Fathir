@@ -1,9 +1,8 @@
 from app.constants.config import get_connection
 conn = get_connection
 
-DB_PATH = "C:/Users/Fathir/Documents/pos-pintar-by-fathir/data/pos.db"
-
-def ambil_detail_transaksi(id_transaksi, tipe):
+def get_detail_transaksi(id_transaksi, tipe):
+    print("Mendapatkan detail transaksi untuk tipe:", tipe)
     conn = get_connection()
     conn.row_factory = get_connection.Row # Akses kolom by name
 
@@ -21,9 +20,9 @@ def ambil_detail_transaksi(id_transaksi, tipe):
 
     elif tipe == "pembelian":
         cursor.execute("""
-        SELECT produk_id, qty, harga_beli
-        FROM detail_pembelian
-        WHERE pembelian_id = ?
+            SELECT produk_id, qty, harga_beli
+            FROM detail_pembelian
+            WHERE pembelian_id = ?
         """, (id_transaksi,))
         rows = cursor.fetchall()
         conn.close()
@@ -31,9 +30,9 @@ def ambil_detail_transaksi(id_transaksi, tipe):
 
     elif tipe == "pengeluaran":
         cursor.execute("""
-        SELECT kategori, keterangan, tanggal, nominal
-        FROM pengeluaran
-        WHERE id_pengeluaran = ?
+            SELECT kategori, keterangan, tanggal, nominal
+            FROM pengeluaran
+            WHERE id_pengeluaran = ?
         """, (id_transaksi,))
         row = cursor.fetchone()
         conn.close()
@@ -42,15 +41,6 @@ def ambil_detail_transaksi(id_transaksi, tipe):
     else:
         conn.close()
         return []
-
-def get_detail_transaksi(id_transaksi, tipe):
-    print("Mendapatkan detail transaksi untuk tipe:", tipe)
-    if tipe == "penjualan":
-        return ambil_detail_transaksi(id_transaksi, tipe)
-    elif tipe == "pembelian":
-        return ambil_detail_transaksi(id_transaksi, tipe)
-    elif tipe == "pengeluaran":
-        return ambil_detail_transaksi(id_transaksi, tipe)
     
 def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
     conn = get_connection()
@@ -87,3 +77,5 @@ def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
         "pembelian": total_pembelian,
         "pengeluaran": total_pengeluaran
     }
+
+
