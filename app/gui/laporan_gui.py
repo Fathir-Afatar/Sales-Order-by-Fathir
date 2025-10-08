@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
-from app.core.laporan_core import get_ringkasan_laporan, get_histori_transaksi, get_nama_supplier
+from app.core.laporan_core import get_ringkasan_laporan, get_histori_transaksi, get_nama_supplier, get_ringkasan_member
 
 def buat_frame_laporan(parent, set_judul_modul):
     set_judul_modul("Laporan")
@@ -16,11 +16,13 @@ def buat_frame_laporan(parent, set_judul_modul):
     tab_penjualan = ttk.Frame(notebook)
     tab_pembelian = ttk.Frame(notebook)
     tab_pengeluaran = ttk.Frame(notebook)
+    tab_member = ttk.Frame(notebook)
 
     notebook.add(tab_laporan, text="Laporan")
     notebook.add(tab_penjualan, text="Penjualan")
     notebook.add(tab_pembelian, text="Pembelian")
     notebook.add(tab_pengeluaran, text="Pengeluaran")
+    notebook.add(tab_member, text="Member")
 
     # Build Filter Tanggal
     entry_awal, entry_akhir = build_filter_area(tab_laporan)
@@ -30,9 +32,10 @@ def buat_frame_laporan(parent, set_judul_modul):
     label_pembelian = build_panel(tab_laporan, "Pembelian", lambda: notebook.select(tab_pembelian))
     label_pengeluaran = build_panel(tab_laporan, "Pengeluaran", lambda: notebook.select(tab_pengeluaran))
 
-    tree_penjualan = build_treeview_laporan(tab_penjualan, ["Tanggal", "Total"])
-    tree_pembelian = build_treeview_laporan(tab_pembelian, ["Tanggal", "Supplier", "Total"])
-    tree_pengeluaran = build_treeview_laporan(tab_pengeluaran, ["Tanggal", "Kategori", "Nominal", "Keterangan"])
+    tree_penjualan = build_treeview_with_scroll(tab_penjualan, ["Tanggal", "Total"])
+    tree_pembelian = build_treeview_with_scroll(tab_pembelian, ["Tanggal", "Supplier", "Total"])
+    tree_pengeluaran = build_treeview_with_scroll(tab_pengeluaran, ["Tanggal", "Kategori", "Nominal", "Keterangan"])
+    tree_member = build_treeview_with_scroll(tab_member, ["Nama", "Total Belanja", "Kontribusi", "Frekuensi"])
 
     # Tombol tampilkan
     def tampilkan_ringkasan():
@@ -49,6 +52,7 @@ def buat_frame_laporan(parent, set_judul_modul):
         hist_penjualan = get_histori_transaksi("penjualan", awal, akhir)
         hist_pembelian = get_histori_transaksi("pembelian", awal, akhir)
         hist_pengeluaran = get_histori_transaksi("pengeluaran", awal, akhir)
+        data_member = get_ringkasan_member(awal, akhir)
 
         def format_rupiah(nilai):
             return f"Rp {int(nilai):,}".replace(".", ",")
@@ -57,6 +61,8 @@ def buat_frame_laporan(parent, set_judul_modul):
         for tree in [tree_penjualan, tree_pembelian, tree_pengeluaran]:
             for item in tree.get_children():
                 tree.delete(item)
+        for item in tree_member.get_children():
+            tree_member.delete(item)
         
         # Isi ulang
         
@@ -73,7 +79,10 @@ def buat_frame_laporan(parent, set_judul_modul):
         for row in hist_pengeluaran:
             total = format_rupiah(row["nominal"])
             tree_pengeluaran.insert("", "end", values=(row["tanggal"], row["kategori"], total, row["keterangan"]))
-    
+
+        for row in data_member:
+            tree_member.insert("", "end", values=(row["nama"], format_rupiah(row["total_belanja"]), format_rupiah(row["kontribusi"]), row["frekuensi"]))
+
     # Tombol tampilkan di filter
 
     filter_frame = entry_awal.master
@@ -110,12 +119,21 @@ def build_panel(parent, judul, command):
 
     return label
 
-def build_treeview_laporan(parent, kolom):
-    tree = ttk.Treeview(parent, columns=kolom, show="headings")
+
+def build_treeview_with_scroll(parent, kolom):
+    container = tk.Frame(parent)
+    container.pack(fill="both", expand=True, padx=10, pady=10)
+
+    scrollbar_y = tk.Scrollbar(container, orient="vertical")
+    scrollbar_y.pack(side="right", fill="y")
+
+    tree = ttk.Treeview(container, columns=kolom, show="headings", yscrollcommand=scrollbar_y.set)
     for col in kolom:
         tree.heading(col, text=col)
         tree.column(col, anchor="center")
-    tree.pack(fill="both", expand=True, padx=10, pady=10)
+    tree.pack(fill="both", expand=True)
+
+    scrollbar_y.config(command=tree.yview)
     return tree
 
 

@@ -43,7 +43,7 @@ Membuat executable (.exe) dengan PyInstaler untuk distribusi kantor.
   - Penjualan
   - Pembelian
   - Pengeluaran
-- [ ] Tambahkan tab **Laporan Member**:
+- [X] Tambahkan tab **Laporan Member**:
   - Total Belanja
   - Kontribusi profit
   - Frekuensi transaksi
