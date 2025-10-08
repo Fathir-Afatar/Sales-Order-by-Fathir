@@ -17,9 +17,10 @@ from local_escpos.printer import Usb
 
 transaksi_terakhir = None
 
-def buat_frame_penjualan(parent):
+def buat_frame_penjualan(parent, set_judul_modul):
     frame = tk.Frame(parent)
     frame.pack(fill="both", expand=True)
+    set_judul_modul("Penjualan")
 
     # Tabs & Produk
 
