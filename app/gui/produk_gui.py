@@ -275,7 +275,7 @@ def format_rupiah(nilai):
         return "Rp 0"
 
 # Main GUI
-def buat_frame_produk(parent):
+def buat_frame_produk(parent, set_judul_modul):
     global entry_nama, entry_kode, entry_kategori, entry_merk
     global entry_harga_beli, entry_harga_jual, entry_stok, entry_berat
     global tree, selected_id, entry_filter_kategori
@@ -291,6 +291,7 @@ def buat_frame_produk(parent):
 
     refresh_tree()
     frame.pack(fill="both", expand=True)
+    set_judul_modul("Produk")
 
 def build_kontrol_produk(frame):
     global entry_cari
