@@ -83,7 +83,7 @@ def tampilkan_histori(data_pengeluaran):
         print("Data masuk ke Treeview:", len(data_pengeluaran))
         print("Treeview values:", row["tanggal"], row["nama_pengeluaran"], row["kategori"], row["nominal"], row["keterangan"])
 
-def buat_frame_pengeluaran(parent):
+def buat_frame_pengeluaran(parent, set_judul_modul):
     global tree
     frame = tk.Frame(parent, bg="#f4f4f4")
 
@@ -262,6 +262,8 @@ def buat_frame_pengeluaran(parent):
     tk.Button(frame_btn, text="Tambah", command=lambda:buka_form_tambah_pengeluaran(tampilkan_histori)).pack(side=tk.LEFT, padx=10)
     
     frame.pack(fill="both", expand=True)
+    
+    set_judul_modul("Pengeluaran")
 
 if __name__ == "__main__":
     buat_frame_pengeluaran()
