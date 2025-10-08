@@ -64,7 +64,7 @@ def isi_treeview_stok(tree, kartu):
             print("[DEBUG] Baris hari ini:", row)
 
 
-def buat_frame_stok(parent):
+def buat_frame_stok(parent, set_judul_modul):
     frame = tk.Frame(parent)
     frame.pack(fill="both", expand=True)
 
@@ -73,6 +73,8 @@ def buat_frame_stok(parent):
 
     build_section_kartu_stok(notebook)
     build_section_ringkasan_stok(notebook)
+
+    set_judul_modul("Stok")
 
 def build_section_kartu_stok(parent):
     tab_stok = ttk.Frame(parent)
