@@ -14,7 +14,7 @@ Membuat executable (.exe) dengan PyInstaler untuk distribusi kantor.
 ## GUI dan UX Perbaikan
 - [X] Tambahkan **Menu Utama** saat aplikasi dibuka (bukan langsung ke penjualan)
 - [X] Perbaiki **scrollbar vertical** di modul Produk agar menyatu dengan Treeview
-- [ ] Tambahkan **judul modul** di setiap tampilan (Produk, Member, dll)
+- [X] Tambahkan **judul modul** di setiap tampilan (Produk, Member, dll)
 - [X] Perbaiki layout kolom modul Member agar tidak bergeser saat edit
 
 ----
