@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
-from app.core.laporan_core import get_ringkasan_laporan
+from app.core.laporan_core import get_ringkasan_laporan, get_histori_transaksi, get_nama_supplier
 
 def buat_frame_laporan(parent, set_judul_modul):
     set_judul_modul("Laporan")
@@ -30,6 +30,10 @@ def buat_frame_laporan(parent, set_judul_modul):
     label_pembelian = build_panel(tab_laporan, "Pembelian", lambda: notebook.select(tab_pembelian))
     label_pengeluaran = build_panel(tab_laporan, "Pengeluaran", lambda: notebook.select(tab_pengeluaran))
 
+    tree_penjualan = build_treeview_laporan(tab_penjualan, ["Tanggal", "Total"])
+    tree_pembelian = build_treeview_laporan(tab_pembelian, ["Tanggal", "Supplier", "Total"])
+    tree_pengeluaran = build_treeview_laporan(tab_pengeluaran, ["Tanggal", "Kategori", "Nominal", "Keterangan"])
+
     # Tombol tampilkan
     def tampilkan_ringkasan():
         awal = entry_awal.get().strip()
@@ -41,6 +45,34 @@ def buat_frame_laporan(parent, set_judul_modul):
             label_pengeluaran.config(text=f"Total Pengeluaran: Rp {int(data['pengeluaran']):,}")
         except Exception as e:
             print("[ERROR] Gagal mengambil laporan:", e)
+        
+        hist_penjualan = get_histori_transaksi("penjualan", awal, akhir)
+        hist_pembelian = get_histori_transaksi("pembelian", awal, akhir)
+        hist_pengeluaran = get_histori_transaksi("pengeluaran", awal, akhir)
+
+        def format_rupiah(nilai):
+            return f"Rp {int(nilai):,}".replace(".", ",")
+
+        # Kosongkan dulu
+        for tree in [tree_penjualan, tree_pembelian, tree_pengeluaran]:
+            for item in tree.get_children():
+                tree.delete(item)
+        
+        # Isi ulang
+        
+        for row in hist_penjualan:
+            total = format_rupiah(row["total_harga"])
+            tanggal = row["tanggal"].split(" ")[0]
+            tree_penjualan.insert("", "end", values=(tanggal, total))
+        
+        for row in hist_pembelian:
+            supplier_nama = get_nama_supplier(row["supplier_id"])
+            total = format_rupiah(row["total_harga"])
+            tree_pembelian.insert("", "end", values=(row["tanggal"], supplier_nama, total))
+        
+        for row in hist_pengeluaran:
+            total = format_rupiah(row["nominal"])
+            tree_pengeluaran.insert("", "end", values=(row["tanggal"], row["kategori"], total, row["keterangan"]))
     
     # Tombol tampilkan di filter
 
@@ -77,6 +109,16 @@ def build_panel(parent, judul, command):
     tk.Button(panel, text="Tampilkan Detail", command=command).pack(side="right")
 
     return label
+
+def build_treeview_laporan(parent, kolom):
+    tree = ttk.Treeview(parent, columns=kolom, show="headings")
+    for col in kolom:
+        tree.heading(col, text=col)
+        tree.column(col, anchor="center")
+    tree.pack(fill="both", expand=True, padx=10, pady=10)
+    return tree
+
+
 
 if __name__ == "__main__":
     buat_frame_laporan()

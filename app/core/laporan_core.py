@@ -1,10 +1,11 @@
 from app.constants.config import get_connection
 conn = get_connection
+import sqlite3
 
 def get_detail_transaksi(id_transaksi, tipe):
     print("Mendapatkan detail transaksi untuk tipe:", tipe)
     conn = get_connection()
-    conn.row_factory = get_connection.Row # Akses kolom by name
+    conn.row_factory = sqlite3.Row # Akses kolom by name
 
     cursor = conn.cursor()
 
@@ -78,4 +79,46 @@ def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
         "pengeluaran": total_pengeluaran
     }
 
+def get_histori_transaksi(tipe, tanggal_awal, tanggal_akhir):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
 
+    if tipe == "penjualan":
+        cursor.execute("""
+            SELECT id_transaksi, tanggal, total_harga
+            FROM transaksi_penjualan
+            WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
+            ORDER BY tanggal DESC
+        """, (tanggal_awal, tanggal_akhir))
+        return [dict(row) for row in cursor.fetchall()]
+    
+    elif tipe == "pembelian":
+        cursor.execute("""
+            SELECT id_pembelian, tanggal, total_harga, supplier_id
+            FROM transaksi_pembelian
+            WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
+            ORDER BY tanggal DESC
+        """, (tanggal_awal, tanggal_akhir))
+        return [dict(row) for row in cursor.fetchall()]
+
+    elif tipe == "pengeluaran":
+        cursor.execute("""
+            SELECT id_pengeluaran, tanggal, kategori, nominal, keterangan
+            FROM Pengeluaran
+            WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
+            ORDER BY tanggal DESC
+        """, (tanggal_awal, tanggal_akhir))
+        return [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    return []
+
+def get_nama_supplier(supplier_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nama_supplier FROM supplier WHERE id_supplier = ?", (supplier_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else f"ID {supplier_id}"
+    
