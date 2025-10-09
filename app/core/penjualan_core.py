@@ -1,6 +1,6 @@
 from datetime import datetime
 import csv
-
+import sqlite3
 from app.core.product_core import get_field_by_kode, ubah_stok_dan_catat_log
 from app.core.stok_core import catat_log_stok, get_stok_terakhir
 from app.constants.config import get_connection
@@ -157,3 +157,14 @@ def simpan_detail_penjualan(transaksi_id, item_list):
         raise e
     finally:
         conn.close()
+
+def get_daftar_member():
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT id_member, nama FROM member ORDER BY nama ASC")
+    hasil = cursor.fetchall()
+    for row in hasil:
+        print(dict(row))
+    conn.close()
+    return [{"id": row[0], "nama": row[1]} for row in hasil]

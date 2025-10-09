@@ -5,7 +5,7 @@ import sqlite3
 import time
 #from escpos.printer import Usb
 from tkinter import ttk, messagebox, Listbox
-from app.core.penjualan_core import proses_penjualan, get_nama_pembeli
+from app.core.penjualan_core import proses_penjualan, get_nama_pembeli, get_daftar_member
 from app.core.product_core import semua_produk
 from app.constants.config import get_connection
 from app.core.member_core import semua_member
@@ -83,7 +83,7 @@ def buat_frame_penjualan(parent, set_judul_modul):
     tk.Button(detail_frame, text="Lihat Detail", command=lambda: lihat_detail_transaksi(rincian_tree)).grid(row=0, column=0, padx=5)
     tk.Button(detail_frame, text="Cetak Ulang Nota", command=lambda: cetak_ulang_nota(rincian_tree)).grid(row=0, column=1, padx=5)
 
-    tk.Button(form_refs["form_frame"], text="Cek", command=lambda:handler_cek_nama_member(form_refs["member_entry"], form_refs["nama_member_label"])).grid(row=3, columnspan=2, padx=5)
+    tk.Button(form_refs["form_frame"], text="Cek", command=lambda:handler_cek_nama_member(form_refs["member_var"], form_refs["nama_member_label"], form_refs["daftar_member"])).grid(row=3, column=2, padx=5)
 
     return frame
 
@@ -108,6 +108,7 @@ def ambil_produk_dan_display():
 def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     produk_var = tk.StringVar()
     total_var = tk.StringVar(value="Total: Rp0")
+    member_var = tk.StringVar()
 
     form_frame = tk.Frame(tab_transaksi)
     form_frame.grid(row=0, column=0, columnspan=4, sticky="w", padx=10, pady=10)
@@ -125,8 +126,12 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     jumlah_entry = tk.Entry(form_frame, width=10)
     jumlah_entry.grid(row=2, column=1, sticky="w", padx=5)
 
-    member_entry = tk.Entry(form_frame, width=10)
-    member_entry.grid(row=3, column=1, sticky="w", padx=5)
+    member_entry = tk.Entry(form_frame, textvariable=member_var, width=40)
+    member_entry.grid(row=3, column=1, padx=5, pady=5)
+
+    member_listbox = tk.Listbox(form_frame, width=40, height=5)
+    member_listbox.grid(row=4, column=1, padx=5, pady=5)
+    member_listbox.grid_remove()
 
     harga_manual_entry = tk.Entry(form_frame, width=15)
     harga_manual_entry.grid(row=4, column=1, sticky="w", padx=5)
@@ -137,9 +142,27 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     nama_member_label = tk.Label(form_frame, text="Nama Member:-", font=("Arial", 10), fg="blue")
     nama_member_label.grid(row=3, column=3, padx=5, pady=2, sticky="w")
 
+    daftar_member = get_daftar_member()
+
+    def update_member_listbox(event=None):
+        typed = member_var.get().lower()
+        member_listbox.delete(0, tk.END)
+        filtered = [m for m in daftar_member if typed in m["nama"].lower()]
+        for m in filtered:
+            member_listbox.insert(tk.END, m["nama"])
+        member_listbox.grid() if filtered else member_listbox.grid_remove()
+    
+    def pilih_member(event=None):
+        selected = member_listbox.get(tk.ACTIVE)
+        member_var.set(selected)
+        member_listbox.grid_remove()
+
+    member_entry.bind("<KeyRelease>", update_member_listbox)
+    member_listbox.bind("<<ListboxSelect>>", pilih_member)
+
     tk.Label(form_frame, text="Pilih Produk").grid(row=0, column=0, sticky="w")
     tk.Label(form_frame, text="Jumlah").grid(row=2, column=0, sticky="w")
-    tk.Label(form_frame, text="ID Member").grid(row=3, column=0, sticky="w")
+    tk.Label(form_frame, text="Nama Member").grid(row=3, column=0, sticky="w")
     tk.Label(form_frame, text="Harga Manual (Opsional)").grid(row=4, column=0, sticky="w")
     tk.Label(form_frame, text="Ongkos Kirim (opsional)").grid(row=6, column=0, sticky="w")
     tk.Label(form_frame, text="* Kosongkan jika ingin pakai harga default", fg="gray").grid(row=5, column=1, sticky="w")
@@ -152,13 +175,16 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
         "produk_entry": produk_entry,
         "produk_listbox": produk_listbox,
         "jumlah_entry": jumlah_entry,
+        "nama_member_label": nama_member_label,
+        "member_var": member_var,
         "member_entry": member_entry,
+        "member_listbox": member_listbox,
+        "daftar_member": daftar_member,
         "harga_manual_entry": harga_manual_entry,
         "ongkir_entry": ongkir_entry,
         "tombol_frame": tombol_frame,
-        "nama_member_label": nama_member_label
     }
-    
+
 def buat_keranjang_penjualan(tab_transaksi):
     keranjang_frame = tk.Frame(tab_transaksi)
     keranjang_frame.grid(row=2, column=0, columnspan=4, padx=10, pady=10)
@@ -285,9 +311,10 @@ def proses_transaksi(refs, keranjang, tree, rincian_tree, state_transaksi, updat
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        member_input = refs["member_entry"].get().strip()
-        member_id = int(member_input) if member_input.isdigit() else None
-        pembeli = get_nama_pembeli(member_id)
+        nama_dipilih = refs["member_var"].get().strip()
+        daftar_member = refs["daftar_member"]
+        member_id = next((m["id"] for m in refs["daftar_member"] if m["nama"] == nama_dipilih), None)
+        pembeli = nama_dipilih if member_id else "[Tidak ditemukan]"
         ongkir = float(ongkir_input) if ongkir_input else 0
         total_barang = sum(i["subtotal"] for i in keranjang)
         total = total_barang + ongkir
@@ -567,16 +594,14 @@ def cek_nama_member(member_id):
     conn.close()
     return result[0] if result else "[Tidak ditemukan]"
 
-def handler_cek_nama_member(entry_widget, label_widget):
-    member_input = entry_widget.get().strip()
-    if not member_input.isdigit():
-        label_widget.config(text="Nama Member: [ID tidak valid]", fg="red")
-        return
-    member_id = int(member_input)
-    nama = cek_nama_member(member_id)
-    warna = "green" if nama not in ["[ID tidak valid]", "[Tidak ditemukan]"] else "red"
-    label_widget.config(text=f"Nama Member: {nama}", fg=warna)
+def handler_cek_nama_member(member_var, label_widget, daftar_member):
+    nama_input = member_var.get().strip()
+    member_id = next((m["id"] for m in daftar_member if m["nama"] == nama_input), None)
 
+    if member_id is None:
+        label_widget.config(text = "Nama member: [Tidak ditemukan]", fg= "red")
+    else:
+        label_widget.config(text=f"Nama Member: {nama_input}", fg="green")
 
 if __name__ == "__main__":
     buat_frame_penjualan()

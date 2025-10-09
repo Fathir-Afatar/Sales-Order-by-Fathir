@@ -51,7 +51,7 @@ Membuat executable (.exe) dengan PyInstaler untuk distribusi kantor.
 ---
 
 ## Pencarian & Input Pintar
-- [ ] Ubah input Member di tab Penjualan:
+- [X] Ubah input Member di tab Penjualan:
   - Dari ID -> menjadi pencarian nama seperti input produk
 
 ---
