@@ -418,12 +418,7 @@ def buat_tombol_penjualan(frame, handlers, state_refs):
     tk.Button(frame, text="Simpan", command=handlers["simpan"]).grid(row=0, column=1, padx=5)
     tk.Button(frame, text="Hapus Produk", command=handlers["hapus"]).grid(row=0, column=2, padx=5)
     tk.Button(frame, text="Reset", command=handlers["reset"]).grid(row=0, column=3, padx=5)
-    tk.Button(frame, text="Preview Nota", command=lambda: handlers["preview"](
-        state_refs["transaksi_id"],
-        state_refs["pembeli"],
-        state_refs["ongkir"],
-        state_refs["total"]
-    )).grid(row=0, column=4, padx=5)
+
 
 def buat_treeview_keranjang(frame, scroll):
     tree = ttk.Treeview(frame, columns=("Produk", "Jumlah", "Harga", "Subtotal"), show="headings", height=10, yscrollcommand=scroll.set)
