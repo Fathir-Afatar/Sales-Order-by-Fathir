@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+import pandas as pd
+from tkinter import ttk, messagebox, filedialog
 from app.core.member_core import tambah_member, semua_member, update_member, hapus_member
 
 
@@ -64,11 +65,51 @@ def tambah_member_gui():
         except Exception as e:
             print("[ERROR]", e) #
             messagebox.showerror("Gagal", str(e))
-    
+
     print("[DEBUG] ISi dropdown tipe:", combo_tipe['values'])
     print("[DEBUG] Isi dropdown ranting:", combo_ranting['values'])
     tk.Button(popup, text="Simpan", command=simpan_member).pack(pady=10)
 
+
+def import_member_excel():
+    filepath = filedialog.askopenfilename(
+        title="Pilih File Excel",
+        filetypes=[("Excel Files", "*.xlsx *.csv")]
+    )
+    if not filepath:
+        return
+    try:
+        if filepath.endswith(".xlsx"):
+            df = pd.read_excel(filepath)
+        else:
+            df = pd.read_csv(filepath)
+        required_columns = {"Kode Member", "Nama", "Nomor HP", "Tipe Member", "Ranting"}
+        if not required_columns.issubset(df.columns):
+            messagebox.showerror("Format Salah", f"Kolom wajid: {', '.join(required_columns)}")
+            return
+        count = 0
+        for _, row in df.iterrows():
+            try:
+                tambah_member(
+                    nama = row["Nama"],
+                    nomor=row["Nomor HP"],
+                    alamat=row["Alamat"],
+                    tipe=row["Tipe Member"],
+                    ranting = row["Ranting"],
+                    kode_member=row["Kode Member"]
+
+                )
+                count += 1
+            except Exception as e:
+                print("[ERROR] Gagal tambah:", row["Nama"], "-", e)
+        
+        messagebox.showinfo("Import Selesai", f"{count} member berhasil ditambahkan.")
+        refresh_tree()
+        update_filter_dropdowns()
+
+    except Exception as e:
+        print("[ERROR] Import gagal:", e)
+        messagebox.showerror("Gagal Import", str(e))
 
 def on_tree_select(event):
     global selected_id
@@ -182,6 +223,7 @@ def build_header(frame):
     frame_header = tk.Frame(frame, bg="#f4f4f4")
     frame_header.pack(pady=10)
     tk.Button(frame_header, text="Tambah Member", command=tambah_member_gui).pack(side=tk.LEFT, padx=6)
+    tk.Button(frame_header, text="Import dari Excel", command=import_member_excel).pack(side=tk.LEFT, padx=6)
 
 def build_filter_area(frame):
     global combo_tipe, combo_ranting
