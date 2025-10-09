@@ -98,7 +98,6 @@ def build_form_produk_buttons(form):
     # Tombol Simpan
 
     tk.Button(form, text="Simpan Produk", command=tambah_produk_gui).grid(row=len(entries), column=0, columnspan=2, pady=20, padx=30)
-    tk.Button(form, text="Import dari Excel", command=import_produk_excel).grid(row=len(entries)+1, column=0, columnspan=2, pady=5)
 
 def center_window(form):    # Untuk menengahkan jendela saat input produk
     form.update_idletasks()
@@ -108,17 +107,6 @@ def center_window(form):    # Untuk menengahkan jendela saat input produk
     y = (form.winfo_screenheight() // 2) - (h // 2)
     form.geometry(f"+{x}+{y}")
 
-def import_produk_excel():
-    file_path = filedialog.askopenfile(filetypes=[("Excel files", ".xlsx")])
-    if file_path:
-        df = pd.read_excel(file_path)
-        for _, row in df.iterrows():
-            nama = row['Nama Produk']
-            kategori = row['Kategori']
-            harga = row['Harga']
-            stok = row['Stok']
-            #simpan_produk(nama, kategori, harga, stok)
-        refresh_tree
 
 # Untuk Edit Produk, buka form edit, dan update produk
 
@@ -301,11 +289,13 @@ def build_kontrol_produk(frame):
 
     frame_kontrol_atas = tk.Frame(frame_kontrol, bg="#f4f4f4")
     frame_kontrol_atas.pack()
-    tk.Button(frame_kontrol_atas, text="Tambah Produk", command=lambda: buka_form_tambah_produk(frame)).pack()
+    tk.Button(frame_kontrol_atas, text="Tambah Produk", command=lambda: buka_form_tambah_produk(frame)).pack(side=tk.LEFT, padx=6)
+    tk.Button(frame_kontrol_atas, text="Import dari Excel", command=import_produk_excel).pack(side=tk.LEFT, padx=6)
 
     frame_kontrol_grid = tk.Frame(frame_kontrol, bg="#f4f4f4")
     frame_kontrol_grid.pack()
 
+    #tk.Button(frame_kontrol, text="Import dari Excel", command=import_produk_excel()).pack()
     tk.Label(frame_kontrol_grid, text="Nama Produk:").grid(row=0, column=0, padx=5, sticky="e")
     
     # Entry cari
@@ -314,6 +304,66 @@ def build_kontrol_produk(frame):
     # Tombol cari  --> hanya nama, Reset Filter
     tk.Button(frame_kontrol_grid, text="Cari", command=cari_produk_nama).grid(row=0, column=2, padx=5)
     tk.Button(frame_kontrol_grid, text="Reset Filter", command=reset_filter).grid(row=0, column=5, padx=5)
+
+def import_produk_excel():
+    file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.csv")])
+    if not file_path:
+        return
+    try:
+        df = pd.read_excel(file_path) if file_path.endswith(".xlsx") else pd.read_csv(file_path)
+
+        required_columns = {
+            "Nama", "Kode", "Kategori", "Merk",
+            "Harga Beli", "Harga Jual", "Stok", "Berat"
+        }
+        if not required_columns.issubset(df.columns):
+            messagebox.showerror("Format Salah", f"Kolom wajib: {', '.join(required_columns)}")
+            return
+        count = 0
+        for _, row in df.iterrows():
+            try:
+                kategori_nama = row["Kategori"]
+                kategori_id = get_kategori_id_by_nama(kategori_nama)
+                if kategori_id is None:
+                    raise ValueError(f"Kategori '{kategori_nama}' tidak ditemukan.")
+                
+                data = {
+                    "nama": row["Nama"],
+                    "kode_produk": row["Kode"],
+                    "kategori_id": kategori_id,
+                    "merk": row["Merk"],
+                    "harga_beli": bersihkan_angka(str(row["Harga Beli"])),
+                    "harga_jual": bersihkan_angka(str(row["Harga Jual"])),
+                    "stok": int(row["Stok"]),
+                    "berat": float(row["Berat"])
+                }
+                if tambah_produk(data):
+                    count += 1
+
+            except Exception as e:
+                print("[ERROR] Gagal tambah produk:", row["Nama"], "-", e)
+        messagebox.showwarning("Import Selesai", f"{count} produk berhasil ditambahkan.")
+        refresh_tree()
+    except Exception as e:
+        print("[ERROR] Import gagal:", e)
+        messagebox.showerror("Gagal Import", str(e))
+
+def tambah_produk_excel(nama, kode, kategori_nama, merk, harga_beli, harga_jual, stok, berat):
+    kategori_id = get_kategori_id_by_nama(kategori_nama)
+    if kategori_id is None:
+        raise ValueError(f"Kategori '{kategori_nama}' tidak ditemukan.")
+
+    data = {
+        "nama": nama.strip(),
+        "kode": kode.strip(),
+        "kategori_id": kategori_id,
+        "merk": merk.strip(),
+        "harga_beli": bersihkan_angka(str(harga_beli)),
+        "harga_jual": bersihkan_angka(str(harga_jual)),
+        "stok": int(stok),
+        "berat": float(berat)
+    }
+
 
 def build_form_produk(frame):
     global entry_nama, entry_kode, entry_kategori, entry_merk
