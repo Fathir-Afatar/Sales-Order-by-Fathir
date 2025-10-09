@@ -29,7 +29,7 @@ Membuat executable (.exe) dengan PyInstaler untuk distribusi kantor.
 ---
 
 ## Import & Export
-- [ ] Tambahkan **Import dari Excel** untuk:
+- [X] Tambahkan **Import dari Excel** untuk:
   - Member
   - Produk
   - Supplier
