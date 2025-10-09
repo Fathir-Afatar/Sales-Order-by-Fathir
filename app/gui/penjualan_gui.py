@@ -365,6 +365,7 @@ def format_item_thermal(nama, harga, qty, subtotal, max_width=LEBAR_BARIS):
                                    
 
 def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ongkir=0, tanggal = None):
+    tanggal_str = format_tanggal_indonesia(tanggal or datetime.now())
     lines = []
     lines.append("=" * LEBAR_BARIS)
     lines.append("KOPANA YOGYAKARTA".center(LEBAR_BARIS))
@@ -372,7 +373,7 @@ def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ong
     lines.append(" Telp: 0822 2715 4266".center(LEBAR_BARIS))
     lines.append("=" * LEBAR_BARIS)
     lines.append(f"Transaksi : #{transaksi_id}")
-    lines.append(f"Tanggal   : {tanggal or datetime.now().strftime('%Y-%m-%d')}")
+    lines.append(f"Tanggal   : {tanggal_str}")
     lines.append(f"Pembeli   : {pembeli}")
     lines.append(f"-" * LEBAR_BARIS)
     lines.append(f"{'Produk':<30} {'Subtotal':>12}")
@@ -399,6 +400,18 @@ def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ong
     lines.append("Terima Kasih".center(LEBAR_BARIS))
     lines.append("=" * LEBAR_BARIS)
     return "\n".join(lines)
+
+def format_tanggal_indonesia(dt):
+    bulan_map = {
+        "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
+        "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
+        "09": "September", "10": "Oktober", "11": "November", "12": "Desember"
+    }
+    tanggal_obj = dt if isinstance(dt, datetime) else datetime.strptime(dt, "%Y-%m-%d")
+    hari = tanggal_obj.strftime("%d")
+    bulan = bulan_map[tanggal_obj.strftime("%m")]
+    tahun = tanggal_obj.strftime("%Y")
+    return f"{hari} {bulan} {tahun}"
 
 def buat_tombol_penjualan(frame, handlers, state_refs):
     tk.Button(frame, text="Tambah ke Keranjang", command=handlers["tambah"]).grid(row=0, column=0, padx=5)

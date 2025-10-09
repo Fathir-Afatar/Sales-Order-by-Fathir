@@ -24,7 +24,7 @@ Membuat executable (.exe) dengan PyInstaler untuk distribusi kantor.
 - [X] Tambahkan **Hapus Member** di modul Member.
 - [X] Aktifkan **Kategori Produk** agar muncul di Treeview dan bisa difilter.
 - [ ] Aktifkan **Preview Nota** sebelum simpan transaksi
-- [ ] Format tanggal nota: '12 Desember 2025 (14:30)
+- [X] Format tanggal nota: '12 Desember 2025 (14:30)
 
 ---
 
