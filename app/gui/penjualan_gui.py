@@ -80,8 +80,7 @@ def buat_frame_penjualan(parent, set_judul_modul):
     rincian_tree, detail_frame = buat_tab_rincian(tab_rincian)
     load_transaksi_rincian(rincian_tree)
 
-    tk.Button(detail_frame, text="Lihat Detail", command=lambda: lihat_detail_transaksi(rincian_tree)).grid(row=0, column=0, padx=5)
-    tk.Button(detail_frame, text="Cetak Ulang Nota", command=lambda: cetak_ulang_nota(rincian_tree)).grid(row=0, column=1, padx=5)
+    tk.Button(detail_frame, text="Lihat & Cetak Nota", command=lambda: lihat_detail_transaksi_cetak(rincian_tree)).grid(row=0, column=0, padx=5)
 
     tk.Button(form_refs["form_frame"], text="Cek", command=lambda:handler_cek_nama_member(form_refs["member_var"], form_refs["nama_member_label"], form_refs["daftar_member"])).grid(row=3, column=2, padx=5)
 
@@ -407,7 +406,7 @@ def format_tanggal_indonesia(dt):
         "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
         "09": "September", "10": "Oktober", "11": "November", "12": "Desember"
     }
-    tanggal_obj = dt if isinstance(dt, datetime) else datetime.strptime(dt, "%Y-%m-%d")
+    tanggal_obj = dt if isinstance(dt, datetime) else datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
     hari = tanggal_obj.strftime("%d")
     bulan = bulan_map[tanggal_obj.strftime("%m")]
     tahun = tanggal_obj.strftime("%Y")
@@ -463,37 +462,43 @@ def get_selected_transaksi_id(tree):
     item = tree.item(selected[0])
     return item["values"][0]
     
-def lihat_detail_transaksi(tree):
+def lihat_detail_transaksi_cetak(tree):
     transaksi_id = get_selected_transaksi_id(tree)
     if not transaksi_id:
         return
         
     conn = get_connection()
     cursor = conn.cursor()
+    # Ambil info transaksi
+    cursor.execute("""SELECT nama_member, ongkos_kirim, total_harga, status, tanggal FROM transaksi_penjualan WHERE id_transaksi =?""", (transaksi_id,))
+    transaksi_info = cursor.fetchone()
+    # Ambil detail barang
     cursor.execute("""SELECT nama_produk, jumlah, harga_satuan, diskon, subtotal, catatan FROM detail_penjualan WHERE transaksi_id = ?""", (transaksi_id,))
     items = cursor.fetchall()
     conn.close()
 
-    detail_window = tk.Toplevel()
-    detail_window.title(f"Detail Transaksi #{transaksi_id}")
-    detail_window.geometry("400x400")
+    # Format data
+    pembeli = transaksi_info[0] or "Tanpa Member"
+    ongkir = transaksi_info[1] or 0
+    total = transaksi_info[2]
+    status = transaksi_info[3]
+    tanggal = transaksi_info[4]
 
-    text_area = tk.Text(detail_window, wrap="word", font=("Courier New", 10))
-    text_area.insert(tk.END, f"Detail Transaksi #{transaksi_id}\n\n")
-    for item in items:
-        nama, qty, harga, diskon, sub, catatan = item
-        text_area.insert(tk.END, f"{nama:<18} {qty} Rp {sub:,.0f}\n")
-        if diskon:
-            text_area.insert(tk.END, f"Diskon: Rp {diskon:,.0f}\n")
-        if catatan:
-            text_area.insert(tk.END, f" Catatan: {catatan}\n")
-        text_area.insert(tk.END, "-"*35 + "\n")
+    item_dicts = [{"produk_nama": i[0], "jumlah": i[1], "harga_satuan":i[2], "diskon": i[3], "subtotal": i[4], "catatan": i[5]} for i in items]
+    nota_text = format_nota_thermal(transaksi_id, pembeli, item_dicts, total, status=status, ongkir=ongkir, tanggal=tanggal)
+        
 
-    total_transaksi = sum(item[4] for item in items)
-    text_area.insert(tk.END, f"\nTotal Transaksi: Rp {total_transaksi:,.0f}\n")
+    popup = tk.Toplevel()
+    popup.title(f"Detail & Cetak Nota #{transaksi_id}")
+    popup.geometry("400x500")
 
+    text_area = tk.Text(popup, wrap="word", font=("Courier New", 10))
+    text_area.insert(tk.END, nota_text)
     text_area.config(state="disabled")
     text_area.pack(fill="both", expand=True, padx=10, pady=10)
+
+    cetak_button = tk.Button(popup, text="Cetak ke Printer Thermal", font=("Arial", 10), bg="green", fg="white", padx=10, pady=5, command=lambda: cetak_nota_thermal(transaksi_id))
+    cetak_button.pack(pady=10)
     
 def cetak_ulang_nota(treeview):
     transaksi_id = get_selected_transaksi_id(treeview)
