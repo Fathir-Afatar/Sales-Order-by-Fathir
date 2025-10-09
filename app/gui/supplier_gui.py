@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
+import pandas as pd
 from app.core.supplier_core import semua_supplier, tambah_supplier, edit_supplier, hapus_supplier
 print("Berhasil import semua_supplier:", semua_supplier)
 import sys
@@ -35,7 +36,7 @@ def buat_frame_supplier(parent, set_judul_modul):
     tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
 
     tk.Button(frame_top, text="Tambah Supplier", command=lambda: buka_form_tambah_supplier(tree, frame)).pack(side="left", padx=5)
-
+    tk.Button(frame_top, text="Import dari Excel", command= lambda: import_supplier_excel(tree)).pack(side="left", padx=5)
     # Cari Nama
 
     tk.Label(frame_top, text="Cari Nama:").pack(side="left", padx=5)
@@ -64,6 +65,40 @@ def buat_frame_supplier(parent, set_judul_modul):
     frame.pack(fill="both", expand=True)
 
     set_judul_modul("Supplier")
+
+def import_supplier_excel(tree):
+    file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.csv")])
+    if not file_path:
+        return
+    try:
+        if file_path.endswith(".xlsx"):
+            df = pd.read_excel(file_path)
+        else:
+            df = pd.read_csv(file_path)
+
+        required_columns = {"Nama Supplier", "Alamat", "No HP"}
+        if not required_columns.issubset(df.columns):
+            messagebox.showerror("Format Salah", f"Kolom wajid: {', '.join(required_columns)}")
+            return
+        count = 0
+        for _, row in df.iterrows():
+            try:
+                data = {
+                    "nama_supplier": row["Nama Supplier"],
+                    "alamat": row["Alamat"],
+                    "no_hp": row["No HP"],
+                    "kode_supplier": None
+                }
+                tambah_supplier(data)
+                count += 1
+            except Exception as e:
+                print("[ERROR] Gagal tambah supplier:", row["Nama Supplier"], "-", e)
+        
+        messagebox.showinfo("Import Selesai", f"{count} supplier berhasil ditambahkan.")
+        refresh_tree(tree)
+    except Exception as e:
+        print("[ERROR] Import gagal:", e)
+        messagebox.showerror("Gagal Import", str(e))
 
 def refresh_tree(tree):
     tree.delete(*tree.get_children())
