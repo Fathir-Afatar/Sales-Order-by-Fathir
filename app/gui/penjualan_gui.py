@@ -4,6 +4,7 @@ import csv
 import sqlite3
 import time
 #from escpos.printer import Usb
+from PIL import Image, ImageDraw, ImageFont
 from tkinter import ttk, messagebox, Listbox
 from app.core.penjualan_core import proses_penjualan, get_nama_pembeli, get_daftar_member
 from app.core.product_core import semua_produk
@@ -497,45 +498,39 @@ def lihat_detail_transaksi_cetak(tree):
     text_area.config(state="disabled")
     text_area.pack(fill="both", expand=True, padx=10, pady=10)
 
+    btn_download = tk.Button(popup, text="Donwload Sebagai gambar", bg="blue", fg="white", command=lambda: simpan_nota_sebagai_gambar(nota_text, transaksi_id))
+    btn_download.pack(pady=5)
+
     cetak_button = tk.Button(popup, text="Cetak ke Printer Thermal", font=("Arial", 10), bg="green", fg="white", padx=10, pady=5, command=lambda: cetak_nota_thermal(transaksi_id))
     cetak_button.pack(pady=10)
     
-def cetak_ulang_nota(treeview):
-    transaksi_id = get_selected_transaksi_id(treeview)
-    if not transaksi_id:
-        return
-        
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""SELECT nama_member, ongkos_kirim, total_harga, status, tanggal FROM transaksi_penjualan WHERE id_transaksi =?""", (transaksi_id,))
-    transaksi_info = cursor.fetchone()
+def simpan_nota_sebagai_gambar(nota_text, transaksi_id):
+    # Siapkan font
+    font_path = "C:/Windows/Fonts/consola.ttf"
+    font = ImageFont.truetype(font_path, 14)
 
-    cursor.execute("SELECT nama_produk, jumlah, harga_satuan, diskon, subtotal, catatan FROM detail_penjualan WHERE transaksi_id =?", (transaksi_id,))
-    items = cursor.fetchall()
-    conn.close()
+    # Hitung ukuran gambar
+    lines = nota_text.split("\n")
+    max_width = max([font.getlength(line) for line in lines]) + 20
+    line_height = font.getbbox("A")[3] + 6
+    img_height = line_height * len(lines) + 20
 
-    pembeli = transaksi_info[0] or "Tanpa Member"
-    ongkir = transaksi_info[1] or 0
-    total = transaksi_info[2]
-    status = transaksi_info[3]
-    tanggal = transaksi_info[4]
+    img = Image.new("RGB", (int(max_width), img_height), color="white")
+    draw = ImageDraw.Draw(img)
 
-    item_dicts = [{"produk_nama": i[0], "jumlah": i[1], "harga_satuan":i[2], "diskon": i[3], "subtotal": i[4], "catatan": i[5]} for i in items]
-    nota_text = format_nota_thermal(transaksi_id, pembeli, item_dicts, total, status=status, ongkir=ongkir, tanggal=tanggal)
-        
-    preview_window = tk.Toplevel()
-    preview_window.title(f"Cetak Ulang Nota #{transaksi_id}")
-    preview_window.geometry("400x500")
+    # Gambar teks
+    y = 10
+    for line in lines:
+        draw.text((10, y), line, font=font, fill="black")
+        y += line_height
+    
+    # Simpan
+    filename = f"nota_{transaksi_id}.png"
+    img.save(filename)
+    messagebox.showinfo("Berhasil", f"nota disimpan sebagai gambar: {filename}")
 
-    text_area = tk.Text(preview_window, wrap="word", font=("Courier New", 10))
-    text_area.insert(tk.END, nota_text)
-    text_area.config(state="disabled")
-    text_area.pack(fill="both", expand=True, padx=10, pady=10)
-        
-    cetak_button = tk.Button(preview_window, text="Cetak ke Printer Thermal", font=("Arial", 10), bg="green", fg="white", padx=10, pady=5, command=cetak_nota_thermal(transaksi_id))
-    cetak_button.pack(pady=10)
 
-    # Ambil Data Transaksi dari Database
+# Ambil Data Transaksi dari Database
 def load_transaksi_rincian(tree_widget):
     conn = get_connection()
     cursor = conn.cursor()
