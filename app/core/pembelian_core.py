@@ -35,18 +35,17 @@ def tambah_pembelian(supplier_id: str, daftar_barang:list):
                            INSERT INTO detail_pembelian (pembelian_id, kode_produk, qty, harga_beli)
                            VALUES (?, ?, ?, ?)
                            """, (pembelian_id, item["kode_produk"], item["qty"], item["harga_beli"]))
-
-            # Gunakan koneksi yang sama untuk update stok
-            ubah_stok_dan_catat_log(cursor, item["kode_produk"], item["qty"], "MASUK")
             
              # Query ambil produk_id berdasarkan kode_produk           
             cursor.execute("SELECT id_produk FROM produk WHERE kode_produk = ?", (item["kode_produk"],))
             result = cursor.fetchone()
-            if result:
-                produk_id = result[0]
-                
-            else:
+            if not result:
                 print(f"[ERROR] Produk dengan kode'{item['kode_produk']}' tidak ditemukan.")
+                continue
+        
+            produk_id = result[0]
+            # Gunakan koneksi yang sama untuk update stok
+            ubah_stok_dan_catat_log(cursor, produk_id, item["qty"], "MASUK")
 
         conn.commit()
         print(f"[INFO] Pembelian berhasil disimpan. ID: {pembelian_id}")

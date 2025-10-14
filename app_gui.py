@@ -11,12 +11,14 @@ from app.gui.pembelian_gui import buat_frame_pembelian
 from app.gui.penjualan_gui import buat_frame_penjualan
 from app.gui.stok_gui import buat_frame_stok
 from app.gui.laporan_gui import buat_frame_laporan
+from app.gui.pengaturan_gui import buka_pengaturan_gui
+from app.gui.debug_gui import buka_debug_gui
 
 judul_modul_label = None
 judul_frame = None
 def main():
     root = tk.Tk()
-    root.title("POS Pintar by Fathir")
+    root.title("POS Pintar by Fathir V2")
     root.geometry("1200x700")
 
     # Frame utama: navigasi kiri + konten kanan
@@ -48,7 +50,7 @@ def main():
         menu_frame = tk.Frame(content_frame, bg="white")
         menu_frame.pack(fill="both", expand=True)
 
-        tk.Label(menu_frame, text="Selamat Datang di POS Pintar by Fathir", font=("Arial", 18, "bold"), bg="white").pack(pady=30)
+        tk.Label(menu_frame, text="Selamat Datang di POS Pintar by Fathir V2", font=("Arial", 18, "bold"), bg="white").pack(pady=30)
         tk.Label(menu_frame, text="Silakan Pilih modul dari menu di sebelah kiri.", font=("Arial", 12), bg="white").pack(pady=10)
 
     # Fungsi untuk menampilkan frame dari modul
@@ -75,6 +77,8 @@ def main():
         ("Penjualan", buat_frame_penjualan),
         ("Stok", buat_frame_stok),
         ("Laporan", buat_frame_laporan),
+        ("Pengaturan", buka_pengaturan_gui),
+        ("Debug", buka_debug_gui)
     ]
 
     for label, func in tombol_navigasi:

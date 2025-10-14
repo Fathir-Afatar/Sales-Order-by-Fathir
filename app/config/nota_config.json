@@ -1,0 +1,8 @@
+{
+    "header": "Toko POS Pintar",
+    "footer": "Terimakasih atas kunjungan Anda",
+    "font_size": 14,
+    "margin_kiri": 10,
+    "margin_kanan": 10,
+    "lebar_kertas": "80mm"
+}

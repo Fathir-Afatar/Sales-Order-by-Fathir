@@ -1,20 +1,18 @@
 import tkinter as tk
 from datetime import datetime
 import csv
-import sqlite3
 import time
-#from escpos.printer import Usb
 from PIL import Image, ImageDraw, ImageFont
 from tkinter import ttk, messagebox, Listbox
 from app.core.penjualan_core import proses_penjualan, get_nama_pembeli, get_daftar_member
 from app.core.product_core import semua_produk
 from app.constants.config import get_connection
 from app.core.member_core import semua_member
+from app.core.pengaturan_core import format_nota_thermal, cetak_nota_thermal
+from app.core.debug_core import log_fungsi
 
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
-from local_escpos.printer import Usb
 
 transaksi_terakhir = None
 
@@ -34,7 +32,7 @@ def buat_frame_penjualan(parent, set_judul_modul):
 
     form_refs["produk_entry"].bind("<KeyRelease>", lambda e: filter_produk(form_refs, produk_display_list))
     form_refs["produk_listbox"].bind("<<ListboxSelect>>", lambda e: pilih_produk(form_refs))
-
+    form_refs["ongkir_entry"].bind("<KeyRelease>", lambda e: update_total(form_refs, keranjang))
     # ------- State Transaksi -----
 
     state_transaksi = {
@@ -142,6 +140,9 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     nama_member_label = tk.Label(form_frame, text="Nama Member:-", font=("Arial", 10), fg="blue")
     nama_member_label.grid(row=3, column=3, padx=5, pady=2, sticky="w")
 
+    total_label = tk.Label(form_frame, textvariable=total_var, font=("Segoe UI", 12, "bold"), anchor="e")
+    total_label.grid(row=8, column=1, sticky="e", padx=10, pady=(10, 0))
+
     daftar_member = get_daftar_member()
 
     def update_member_listbox(event=None):
@@ -183,6 +184,8 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
         "harga_manual_entry": harga_manual_entry,
         "ongkir_entry": ongkir_entry,
         "tombol_frame": tombol_frame,
+        "total_var": total_var,
+        "total_label": total_label
     }
 
 def buat_keranjang_penjualan(tab_transaksi):
@@ -265,6 +268,13 @@ def tambah_item_ke_keranjang(refs, produk_display_list, keranjang, tree):
 
 def update_total(refs, keranjang):
     total = sum(item["subtotal"] for item in keranjang)
+    try:
+        ongkir_input = refs["ongkir_entry"].get().strip()
+        ongkir = float(ongkir_input) if ongkir_input else 0
+        total += ongkir
+    except:
+        pass
+
     refs["total_var"].set(f"Total: Rp{total:,.0f}")
 
 def hapus_produk_terpilih(tree, keranjang, update_total_fn):
@@ -289,7 +299,8 @@ def reset_transaksi(refs, keranjang, tree, update_total_fn):
     refs["jumlah_entry"].delete(0, tk.END)
     refs["produk_var"].set("")
     refs["member_entry"].delete(0, tk.END)
-    update_total_fn
+    refs["ongkir_entry"].delete(0, tk.END)
+    update_total_fn()
 
 def preview_nota(transaksi_id, pembeli, keranjang, total, status="DRAFT", ongkir=0):
     nota_text = format_nota_thermal(transaksi_id, pembeli, keranjang, total, status=status, ongkir=ongkir)
@@ -305,6 +316,7 @@ def preview_nota(transaksi_id, pembeli, keranjang, total, status="DRAFT", ongkir
 
     cetak_button = tk.Button(preview_window, text="Cetak ke Printer Thermal", font=("Arial", 10), bg="green", fg="white", command=lambda: cetak_nota_thermal(transaksi_id))
     cetak_button.pack(pady=10)
+
 
 def proses_transaksi(refs, keranjang, tree, rincian_tree, state_transaksi, update_total_fn):
     ongkir_input = refs["ongkir_entry"].get().strip()
@@ -350,68 +362,6 @@ def simpan_nota_csv(transaksi_id, pembeli, keranjang, total, ongkir=0):
         f.write(nota)
     messagebox.showinfo("Nota", f"Nota transaksi disimpan sebagai {filename}")
 
-LEBAR_BARIS = 42
-
-def format_item_thermal(nama, harga, qty, subtotal, max_width=LEBAR_BARIS):
-    lines = []
-    if len(nama) <= 30:
-        lines.append(f"{nama:<30}{subtotal:>12,.0f}")
-    else:
-        lines.append(nama[:max_width]) # baris nama penuh
-
-        lines.append(f"{'Subtotal':<30}{f'{subtotal:,.0f}':>12}")
-    lines.append(f"{qty} x {f'{harga:,.0f}':>8}")
-    return "\n".join(lines) + "\n"
-                                   
-
-def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ongkir=0, tanggal = None):
-    tanggal_str = format_tanggal_indonesia(tanggal or datetime.now())
-    lines = []
-    lines.append("=" * LEBAR_BARIS)
-    lines.append("KOPANA YOGYAKARTA".center(LEBAR_BARIS))
-    lines.append(" Gatak, Selomartani, Kalasan, Sleman".center(LEBAR_BARIS))
-    lines.append(" Telp: 0822 2715 4266".center(LEBAR_BARIS))
-    lines.append("=" * LEBAR_BARIS)
-    lines.append(f"Transaksi : #{transaksi_id}")
-    lines.append(f"Tanggal   : {tanggal_str}")
-    lines.append(f"Pembeli   : {pembeli}")
-    lines.append(f"-" * LEBAR_BARIS)
-    lines.append(f"{'Produk':<30} {'Subtotal':>12}")
-    lines.append("-" * LEBAR_BARIS)
-
-    for item in items:
-        lines.append(format_item_thermal(
-            item["produk_nama"],
-            item["harga_satuan"],
-            item["jumlah"],
-            item["subtotal"]
-            ))
-        
-        if item.get("diskon"):
-            lines.append(f"{'Diskon':<30}{item['diskon']:>12,.0f}")
-        if item.get("catatan"):
-            lines.append(f"{'Catatan':<9} {item['catatan'][:LEBAR_BARIS-9]}")
-    
-    lines.append("-" * LEBAR_BARIS)
-    lines.append(f"{'Subtotal':<24}{f'Rp {total - ongkir:,.0f}':>18}")
-    lines.append(f"{'Ongkir':<24}{f'Rp {ongkir:,.0f}':>18}")
-    lines.append(f"{'Total':<24}{f'Rp {total:,.0f}':>18}")
-    lines.append("=" * LEBAR_BARIS)
-    lines.append("Terima Kasih".center(LEBAR_BARIS))
-    lines.append("=" * LEBAR_BARIS)
-    return "\n".join(lines)
-
-def format_tanggal_indonesia(dt):
-    bulan_map = {
-        "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
-        "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
-        "09": "September", "10": "Oktober", "11": "November", "12": "Desember"
-    }
-    tanggal_obj = dt if isinstance(dt, datetime) else datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
-    hari = tanggal_obj.strftime("%d")
-    bulan = bulan_map[tanggal_obj.strftime("%m")]
-    tahun = tanggal_obj.strftime("%Y")
-    return f"{hari} {bulan} {tahun}"
 
 def buat_tombol_penjualan(frame, handlers, state_refs):
     tk.Button(frame, text="Tambah ke Keranjang", command=handlers["tambah"]).grid(row=0, column=0, padx=5)
@@ -548,49 +498,6 @@ def load_transaksi_rincian(tree_widget):
     tree_widget.update_idletasks()
     print("[DEBUG] Jumlah transaksi dimuat:", len(rows))
 
-def cetak_nota_thermal(transaksi_id):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()    
-    try:
-        # Ambil transaksi utama
-        cursor.execute("""
-            SELECT tanggal, nama_member, total_harga, ongkos_kirim
-            FROM transaksi_penjualan
-            WHERE id_transaksi = ?
-        """, (transaksi_id,))
-        transaksi = cursor.fetchone()
-        if not transaksi:
-            print("[ERROR] Transaksi tidak ditemukan.")
-            return
-        
-        tanggal = transaksi["tanggal"]
-        pembeli = transaksi["nama_member"] or "-"
-        total = transaksi["total_harga"]
-        ongkir = transaksi["ongkos_kirim"]
-
-        # Ambil Detail barang
-        cursor.execute("""
-            SELECT nama_produk AS produk_nama, jumlah, harga_satuan, subtotal 
-            FROM detail_penjualan
-            WHERE transaksi_id = ?
-        """, (transaksi_id,))
-        items = [dict(row) for row in cursor.fetchall()]
-        # Format nota pakai yang sudah ada
-        nota_str = format_nota_thermal(transaksi_id, pembeli, items, total, ongkir=ongkir, tanggal=tanggal)
-        # Kirim ke printer thermal
-        try:
-            p = Usb(0x28e9, 0x0289) # VendorID dan ProcutID dari printer
-            p.open()
-            p.text(nota_str)
-            p.cut()
-            p.close()
-            time.sleep(0.5)
-            print("[INFO] Nota berhasil dicetak ke printer thermal.")
-        except Exception as e:
-            print("[ERROR] Gagal mencetak nota:", e)
-    finally:
-         conn.close()
     
 def cek_nama_member(member_id):
     if not isinstance(member_id, int):
@@ -610,6 +517,28 @@ def handler_cek_nama_member(member_var, label_widget, daftar_member):
         label_widget.config(text = "Nama member: [Tidak ditemukan]", fg= "red")
     else:
         label_widget.config(text=f"Nama Member: {nama_input}", fg="green")
+
+def hitung_total_transaksi(treeview, total_var, ongkir_entry=None):
+    total = 0
+    for child in treeview.get_children():
+        item = treeview.item(child)["values"]
+        if len(item) >= 4:
+            try:
+                subtotal = int(item[3])  # kolom ke-4 = subtotal
+                total += subtotal
+            except:
+                pass
+
+    # Tambahkan ongkir jika ada
+    if ongkir_entry:
+        try:
+            ongkir = float(ongkir_entry.get().strip())
+            total += ongkir
+        except:
+            pass
+
+    total_var.set(f"Total: Rp{total:,}")
+
 
 if __name__ == "__main__":
     buat_frame_penjualan()
