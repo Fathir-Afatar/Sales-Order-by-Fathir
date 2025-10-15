@@ -93,15 +93,10 @@ def format_tanggal_indonesia(dt):
 
 def format_item_thermal(nama, harga, qty, subtotal, max_width=LEBAR_BARIS):
     lines = []
-    if len(nama) <= 30:
-        lines.append(f"{nama:<30}{subtotal:>12,.0f}")
-    else:
-        lines.append(nama[:max_width]) # baris nama penuh
-
-        lines.append(f"{'Subtotal':<30}{f'{subtotal:,.0f}':>12}")
-    lines.append(f"{qty} x {f'{harga:,.0f}':>8}")
-    return "\n".join(lines) + "\n"
-                                   
+    nama = nama[:30] if len(nama) > 30 else nama
+    lines.append(f"{nama:<30}{subtotal:>12,.0f}")
+    lines.append(f"{qty} x {harga:,.0f}")
+    return "\n".join(lines)                                   
 
 def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ongkir=0, tanggal = None):
     from app.core.pengaturan_core import ambil_format_nota
