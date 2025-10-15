@@ -7,14 +7,14 @@ CREATE TABLE produk (
   harga_beli REAL,
   harga_jual REAL,
   stok INTEGER,
-  berat REAL,
+  berat REAL, kategori_produk TEXT,
   FOREIGN KEY (kategori_id) REFERENCES kategori(id_kategori)
-);
+)
 
 CREATE TABLE kategori (
   id_kategori INTEGER PRIMARY KEY,
   nama_kategori TEXT
-);
+)
 
 CREATE TABLE member (
   id_member INTEGER PRIMARY KEY,
@@ -23,34 +23,14 @@ CREATE TABLE member (
   no_hp TEXT,          -- opsional
   koordinat TEXT,     -- opsional
   ranting TEXT        -- opsional
-);
+, tipe TEXT, kode_member TEXT)
 
 CREATE TABLE supplier (
   id_supplier INTEGER PRIMARY KEY,
   nama_supplier TEXT,
   alamat text,
-  no_hp TEXT
-);
-
-CREATE TABLE transaksi_penjualan (
-  id_transaksi INTEGER PRIMARY KEY,
-  tanggal TEXT,
-  member_id INTEGER,
-  total_harga REAL,
-  ongkos_kirim REAL,
-  FOREIGN KEY (member_id) REFERENCES member(id_member)
-);
-
-CREATE TABLE detail_penjualan (
-  id_detail INTEGER PRIMARY KEY,
-  transaksi_id INTEGER,
-  produk_id INTEGER,
-  jumlah INTEGER,
-  harga_satuan REAL,
-  FOREIGN KEY (transaksi_id) REFERENCES transaksi_penjualan(id_transaksi),
-  FOREIGN KEY (produk_id) REFERENCES produk(id_produk)
-
-);
+  no_hp TEXT, 
+  kode_supplier TEXT)
 
 CREATE TABLE transaksi_pembelian (
   id_pembelian INTEGER PRIMARY KEY,
@@ -58,7 +38,43 @@ CREATE TABLE transaksi_pembelian (
   supplier_id INTEGER,
   total_harga REAL,
   FOREIGN KEY (supplier_id) REFERENCES supplier (id_supplier)
-);
+)
+
+CREATE TABLE detail_penjualan (
+    id_detail INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaksi_id INTEGER NOT NULL,
+    produk_id INTEGER NOT NULL,
+    nama_produk TEXT NOT NULL,
+    jumlah INTEGER NOT NULL CHECK(jumlah >= 0),
+    harga_satuan REAL NOT NULL,
+    diskon REAL DEFAULT 0,
+    subtotal REAL NOT NULL,
+    satuan TEXT,
+    catatan TEXT,
+    FOREIGN KEY (produk_id) REFERENCES produk(id_produk),
+    FOREIGN KEY (transaksi_id) REFERENCES transaksi_penjualan(id_transaksi)
+)
+
+CREATE TABLE transaksi_penjualan (
+    id_transaksi INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal DATETIME NOT NULL,
+    kode_member INTEGER,
+    nama_member TEXT,
+    total_harga REAL NOT NULL,
+    ongkos_kirim REAL DEFAULT 0,
+    voucher REAL DEFAULT 0,
+    metode_bayar TEXT,
+    catatan TEXT, status TEXT DEFAULT 'FINAL',
+    FOREIGN KEY (kode_member) REFERENCES member(id_member) ON DELETE SET NULL
+)
+
+CREATE TABLE transaksi_pembelian (
+  id_pembelian INTEGER PRIMARY KEY,
+  tanggal TEXT,
+  supplier_id INTEGER,
+  total_harga REAL,
+  FOREIGN KEY (supplier_id) REFERENCES supplier (id_supplier)
+)
 
 CREATE TABLE detail_pembelian (
   id_detail INTEGER PRIMARY KEY,
@@ -75,8 +91,8 @@ CREATE TABLE Pengeluaran (
   tanggal TEXT,
   nama_pengeluaran TEXT,
   nominal REAL,
-  keterangan text
-);
+  keterangan text, 
+  kategori TEXT)
 
 CREATE TABLE user (
   id_user INTEGER PRIMARY KEY,
@@ -95,3 +111,11 @@ CREATE TABLE log_stock (
   jenis_perubahan TEXT,
   FOREIGN KEY (produk_id) REFERENCES produk(id_produk)
 );
+
+CREATE TABLE log_harga_beli_harga_jual (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+kode_produk TEXT,
+harga_beli INTEGER,
+harga_jual INTEGER,
+tanggal TEXT
+)
