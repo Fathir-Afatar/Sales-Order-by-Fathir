@@ -17,8 +17,19 @@ def refresh_tree():
 
 def update_filter_dropdowns():
     all_member = semua_member()
-    tipe_values = sorted(set([d["tipe"] for d in all_member]))
-    ranting_values = sorted(set([d["ranting"] for d in all_member]))
+    tipe_values = sorted(set([
+        d["tipe"] for d in all_member
+        if d.get("tipe") not in [None, ""]
+    ]))
+    if not tipe_values:
+        tipe_values = ["(Tidak ada data)"]
+
+    ranting_values = sorted(set([
+        d["ranting"] for d in all_member
+        if d.get("ranting") not in [None, ""]
+    ]))
+    if not ranting_values:
+        ranting_values = ["(Tidak ada data)"]
     combo_tipe['values'] = tipe_values
     combo_ranting['values'] = ranting_values
 
@@ -232,9 +243,17 @@ def build_filter_area(frame):
     frame_filter.pack(pady=10)
 
     all_member = semua_member()
+    print(f"[DEBUG] Jumlah member: {len(all_member)}")
+    print(f"[DEBUG] Contoh data: {all_member[:3]}")
     # Ambil data unik
-    tipe_values = sorted(set([d["tipe"] for d in all_member]))
-    ranting_values = sorted(set([d["ranting"] for d in all_member]))
+    tipe_values = sorted(set([d["tipe"] for d in all_member if d.get("tipe") not in [None, ""]]))
+    if not tipe_values: tipe_values = ["(Tidak ada data)"]
+
+    ranting_values = sorted(set([
+        d["ranting"] for d in all_member 
+        if d.get("ranting") not in [None, ""]
+        ]))
+    if not ranting_values: ranting_values = ["(Tidak ada data)"]
 
     # Dropdown Tipe
     tk.Label(frame_filter, text="Filter Tipe").pack(side='left')
