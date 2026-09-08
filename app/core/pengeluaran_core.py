@@ -1,7 +1,7 @@
-# Pengeluaran di luar sembako, pengadaan, transaksi.
-# Digunakan seperti gaji, token listrik, truk dll
+# Standard Library
 from datetime import datetime
 
+# Local application
 from app.constants.config import get_connection
 
 def tambah_pengeluaran(data):
@@ -119,3 +119,8 @@ def edit_pengeluaran(id_pengeluaran, data):
     )) 
     conn.commit()
     conn.close()
+
+def bersihkan_angka(teks):
+    teks = teks.replace("Rp", "").replace(" ", "").replace(".", "")
+    teks = teks.replace(",", ".")
+    return teks

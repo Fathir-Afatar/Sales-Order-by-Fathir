@@ -1,8 +1,9 @@
+# Thir-party
 import sqlite3
+
+# Local application
 from app.constants.config import get_connection
 from app.core.stok_core import catat_log_stok
-
-# Get Produk
 
 def get_produk(kode_produk):
     conn = get_connection()
@@ -12,8 +13,6 @@ def get_produk(kode_produk):
     conn.close()
     columns = ["id", "nama", "harga_jual"]
     return dict(zip(columns, row)) if row else None
-
-# Add New Product (untuk transaksi pertama kali)
 
 def tambah_produk(data):
     try:
@@ -32,8 +31,6 @@ def tambah_produk(data):
     finally:
         conn.close()
 
-# Edit Product Price
-
 def edit_harga_produk(id_produk, harga_baru):
     conn = get_connection()
     cursor = conn.cursor()
@@ -43,8 +40,6 @@ def edit_harga_produk(id_produk, harga_baru):
     conn.commit()
     conn.close()
 
-# Delete Product
-
 def hapus_produk(id_produk):
     conn = get_connection()
     cursor = conn.cursor()
@@ -53,8 +48,6 @@ def hapus_produk(id_produk):
                 """, (id_produk,))
     conn.commit()
     conn.close()
-
-# Get Product Data by ID
 
 def ambil_produk(id_produk):
     conn = get_connection()
@@ -84,8 +77,6 @@ def log_debug_produk(id_produk, nama, kode, kategori_id, harga_beli, harga_jual,
     print("Stok:", stok)
     print("Berat:", berat)
 
-# Update Produk
-
 def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_jual, stok, berat):
     try:
         validate_produk_data(harga_beli, harga_jual, stok, berat)
@@ -106,7 +97,6 @@ def update_produk(id_produk, nama, kode, kategori_id, merk, harga_beli, harga_ju
     conn.close()
     return True
 
-# Fungsi untuk log stok.
 def ubah_stok_dan_catat_log(cursor, produk_id, delta, jenis_perubahan):
     cursor.execute("SELECT stok FROM produk WHERE id_produk = ?", (produk_id,))
     result = cursor.fetchone()
@@ -117,28 +107,23 @@ def ubah_stok_dan_catat_log(cursor, produk_id, delta, jenis_perubahan):
 
     cursor.execute("UPDATE produk SET stok = ? WHERE id_produk = ?", (stok_akhir, produk_id))
     catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, jenis_perubahan)
-    print(f"[DEBUG] Update stok: {produk_id} | Awal: {stok_awal} -> Akhir: {stok_akhir}")
     return True
-# Semua Produk
 
 def semua_produk():
     conn = get_connection()
     cursor = conn.cursor()
-    print("[INFO] Menjalankan query semua_produk dengan LEFT JOIN")
     query = """SELECT produk.*, kategori.nama_kategori FROM produk LEFT JOIN kategori ON produk.kategori_id = kategori.id_kategori"""
     cursor.execute(query)
     rows = cursor.fetchall()
     columns = [col[0] for col in cursor.description]
     conn.close()
 
-    # Buat list of object atau dict
     produk_list = [dict(zip(columns, row)) for row in rows]
     for produk in produk_list:
         print("[DEBUG] Produk:", produk)
 
     return produk_list
 
-# Get_harga_beli dan cek_stok
 def get_field_by_kode(kode_produk, field):
     conn = get_connection()
     cursor = conn.cursor()
@@ -154,7 +139,6 @@ def ambil_daftar_produk():
     hasil = cursor.fetchall()
     conn.close()
     return [{"kode_produk": row[0], "nama": row[1], "harga": row[2]} for row in hasil]
-
 
 def bersihkan_angka(nilai):
     try:
@@ -217,7 +201,6 @@ def get_produk_by_id(id_produk):
     cursor = conn.cursor()
     cursor.execute("SELECT id_produk, nama_produk, kode_produk, kategori_id, merk, harga_beli, harga_jual, stok, berat FROM produk WHERE id_produk = ?", (id_produk,))
     row = cursor.fetchone()
-    print(f"Hasil query: {row}")
     conn.close()
 
     if row:
@@ -235,6 +218,5 @@ def get_kategori_id_by_nama(nama_kategori):
     cursor.execute("SELECT id_kategori FROM kategori WHERE nama_kategori = ?", (nama_kategori,))
     result = cursor.fetchone()
     conn.close()
-    print("[DEBUG] Query kategori:", nama_kategori, "->", result)
     return result[0] if result else None
 

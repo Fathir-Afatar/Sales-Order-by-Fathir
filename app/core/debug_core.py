@@ -1,6 +1,9 @@
+# Standard library
 import logging
 import os
 import usb.backend.libusb1
+
+# Local application
 from app.constants.config import get_connection, get_database_path
 from app.core.printer_core import ambil_printer_default
 from local_escpos.printer import Usb
@@ -14,7 +17,6 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
 
 def log_info(msg):
     logging.info(msg)
@@ -72,7 +74,6 @@ def log_cetak_gagal(transaksi_id, error):
     log_error(f"Cetak nota transaksi #{transaksi_id} gagal: {error}")
 
 # catatan, tambah log di fungsi penting di semua Modul
-
 def log_fungsi(nama_fungsi):
     from functools import wraps
     def decorator(func):
@@ -112,7 +113,6 @@ def cek_status_printer():
             "status": "TIDAK TERDETEKSI",
             "error": str(e)
         }
-
 
 # cara panggil log_fungsi(nama_fungsi)
 # from app.core.debug_core import log_fungsi

@@ -1,3 +1,4 @@
+# Standard Library
 import json
 import os
 import sys
@@ -11,7 +12,6 @@ else:
 CONFIG_DIR = os.path.join(BASE_DIR, "..", "..", "config")
 NOTA_CONFIG_PATH = os.path.join(CONFIG_DIR, "nota_config.json")
 PRINTER_CONFIG_PATH = os.path.join(CONFIG_DIR,"printer_config.json")
-
 
 def ambil_printer_default():
     config_path = os.path.join(os.getcwd(), "config", "printer_config.json")

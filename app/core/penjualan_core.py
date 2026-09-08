@@ -1,8 +1,15 @@
-from datetime import datetime
+# Standard Library
 import csv
 import sqlite3
-from app.core.product_core import get_field_by_kode, ubah_stok_dan_catat_log
-from app.core.stok_core import catat_log_stok, get_stok_terakhir
+
+# Third party
+from datetime import datetime
+import tkinter as tk
+from tkinter import messagebox
+
+# Local application
+from app.core.product_core import ubah_stok_dan_catat_log
+from app.core.stok_core import catat_log_stok
 from app.constants.config import get_connection
 conn = get_connection()
 
@@ -53,10 +60,6 @@ def proses_penjualan(data):
             if stok < jumlah:
                 raise ValueError(f"Stok Produk ID {produk_id} tidak cukup.")
             
-            #subtotal = harga_jual * jumlah
-            print("[DEBUG] Keys item:", list(item.keys()))
-            print("[DEBUG] Simpan detail:", item)
-            print("[DEBUG] Nama produk dari DB:", nama_produk)
             cursor.execute("""
                     INSERT INTO detail_penjualan (transaksi_id, produk_id, nama_produk, jumlah, harga_satuan, subtotal)
                     VALUES (?, ?, ?, ?, ?, ?)
@@ -64,11 +67,9 @@ def proses_penjualan(data):
 
             ubah_stok_dan_catat_log(cursor, item["produk_id"], -jumlah, "KELUAR")
 
-                # Ambil stok sebelum update
             stok_awal = stok # dari SELECT sebelumnya
             stok_akhir = stok_awal - jumlah
 
-                # Catat log stok keluar
             catat_log_stok(cursor, item["produk_id"], stok_awal, stok_akhir, "KELUAR")
    
         conn.commit()
@@ -93,7 +94,6 @@ def get_nama_pembeli(member_id):
     finally:
         conn.close()
 
-# ── Cek Produk Stok Rendah ──
 def cek_stok_minimum(threshold):
     conn = get_connection()
     cursor = conn.cursor()
@@ -103,7 +103,6 @@ def cek_stok_minimum(threshold):
     finally:
         conn.close()
 
-# ── Simpan Nota Penjualan ke CSV ──
 def simpan_nota_penjualan_csv(transaksi_id, daftar_barang, total, path="nota.csv"):
     try:
         with open(path, 'w', newline='', encoding='utf-8') as file:
@@ -126,7 +125,6 @@ def simpan_detail_penjualan(transaksi_id, item_list):
             produk_id = item["produk_id"]
             jumlah = item["jumlah"]
 
-            # Ambil data produk
             cursor.execute("SELECT nama_produk, harga_jual, stok FROM produk WHERE id_produk = ?", (produk_id,))
             result = cursor.fetchone()
             if not result:
@@ -136,21 +134,19 @@ def simpan_detail_penjualan(transaksi_id, item_list):
             if stok < jumlah:
                 raise ValueError(f"Stok Produk ID {produk_id} tidak cukup.")
             subtotal = harga_jual * jumlah
-            # Simpan detail penjualan
+
             cursor.execute("""
                 INSERT INTO detail_penjualan (transaksi_id, produk_id, nama_produk, jumlah, harga_satuan, subtotal)
                 VALUES (?, ?, ?, ?, ?, ?)   
             """, (transaksi_id, item["produk_id"], nama_produk, jumlah, harga_jual, subtotal))
-            # Update stok dan log
+
             ubah_stok_dan_catat_log(item["produk_id"], -jumlah)
             stok_awal = stok
             stok_akhir = stok_awal - jumlah
             catat_log_stok(cursor, produk_id, stok_awal, stok_akhir, "KELUAR")
         
-            print(f"[INFO] Produk {nama_produk} ({produk_id}) dikurangi {jumlah}. Stok: {stok_awal} -> {stok_akhir}")
-        
         conn.commit()
-        print(f"[INFO] Detail penjualan untuk transaksi {transaksi_id} berhasil disimpan.")
+
     except Exception as e:
         conn.rollback()
         print(f"[ERROR] simpan_detail_penjualan {e}")
@@ -168,3 +164,116 @@ def get_daftar_member():
         print(dict(row))
     conn.close()
     return [{"id": row[0], "nama": row[1]} for row in hasil]
+
+def load_transaksi_rincian(tree_widget):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+                    SELECT id_transaksi, tanggal, total_harga 
+                    FROM transaksi_penjualan 
+                    ORDER BY id_transaksi DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+        
+    tree_widget.delete(*tree_widget.get_children())
+    for row in rows:
+        tree_widget.insert("", tk.END, values=(row[0], row[1], f"Rp {row[2]:,.0f}", ""))
+    tree_widget.update_idletasks()
+        
+def cek_nama_member(member_id):
+    if not isinstance(member_id, int):
+        return "[ID tidak valid]"
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nama FROM member WHERE id_member = ?", (member_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else "[Tidak ditemukan]"
+
+def handler_cek_nama_member(member_var, label_widget, daftar_member):
+    nama_input = member_var.get().strip()
+    member_id = next((m["id"] for m in daftar_member if m["nama"] == nama_input), None)
+
+    if member_id is None:
+        label_widget.config(text = "Nama member: [Tidak ditemukan]", fg= "red")
+    else:
+        label_widget.config(text=f"Nama Member: {nama_input}", fg="green")
+
+def hitung_total_transaksi(treeview, total_var, ongkir_entry=None):
+    total = 0
+    for child in treeview.get_children():
+        item = treeview.item(child)["values"]
+        if len(item) >= 4:
+            try:
+                subtotal = int(item[3])  # kolom ke-4 = subtotal
+                total += subtotal
+            except:
+                pass
+
+    # Tambahkan ongkir jika ada
+    if ongkir_entry:
+        try:
+            ongkir = float(ongkir_entry.get().strip())
+            total += ongkir
+        except:
+            pass
+
+    total_var.set(f"Total: Rp{total:,}")
+
+def get_selected_transaksi_id(tree):
+    selected = tree.selection()
+    if not selected:
+        messagebox.showwarning("Pilih Transaksi", "Pilih transaksi terlebih dahulu.")
+        return None
+    item = tree.item(selected[0])
+    return item["values"][0]
+
+def get_detail_transaksi(transaksi_id):
+    if not transaksi_id:
+        return None, None
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT nama_member, ongkos_kirim, total_harga, status, tanggal 
+        FROM transaksi_penjualan 
+        WHERE id_transaksi = ?
+    """, (transaksi_id,))
+    transaksi_row = cursor.fetchone()
+
+    if not transaksi_row:
+        conn.close()
+        return None, None
+
+    transaksi_info = {
+        "pembeli": transaksi_row[0] or "Tanpa Member",
+        "ongkir": transaksi_row[1] or 0,
+        "total": transaksi_row[2],
+        "status": transaksi_row[3],
+        "tanggal": transaksi_row[4]
+    }
+
+    cursor.execute("""
+        SELECT nama_produk, jumlah, harga_satuan, diskon, subtotal, catatan 
+        FROM detail_penjualan 
+        WHERE transaksi_id = ?
+    """, (transaksi_id,))
+    items = cursor.fetchall()
+    conn.close()
+
+    item_dicts = [
+        {
+            "produk_nama": i[0], 
+            "jumlah": i[1], 
+            "harga_satuan": i[2], 
+            "diskon": i[3], 
+            "subtotal": i[4], 
+            "catatan": i[5]
+        } 
+        for i in items
+    ]
+
+    return transaksi_info, item_dicts
+

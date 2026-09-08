@@ -1,12 +1,13 @@
+# Third-party
 import tkinter as tk
 import pandas as pd
 from tkinter import ttk, messagebox, filedialog
-from app.core.member_core import tambah_member, semua_member, update_member, hapus_member
 
+# Local Application
+from app.core.member_core import tambah_member, semua_member, update_member, hapus_member
+from app.translator import _, i18n
 
 def refresh_tree():
-    print("[DEBUG] refresh_tree dipangil")
-    print("[DEBUG] refresh_tree aktif oleh", __name__)
     tree.delete(*tree.get_children())
     for row in semua_member():
         tree.insert("", tk.END, iid=row["id_member"], values=(
@@ -36,7 +37,7 @@ def update_filter_dropdowns():
 
 def tambah_member_gui():
     popup = tk.Toplevel()
-    popup.title("Tambah Member")
+    popup.title(_("member.pop_title"))
     popup.geometry("400x400")
     frame_form = tk.Frame(popup)
     frame_form.pack(padx=10, pady=10)
@@ -48,13 +49,12 @@ def tambah_member_gui():
         return entry
     
     # Entry fields
-    
-    entry_kode_member = create_entry("Kode Member")
-    entry_nama = create_entry("Nama")
-    entry_nomor = create_entry("Nomor HP")
-    entry_alamat = create_entry("Alamat")
-    entry_tipe = create_entry("Tipe Member")
-    entry_ranting = create_entry("Ranting")
+    entry_kode_member = create_entry(_("member.entry_kode"))
+    entry_nama = create_entry(_("member.entry_nama"))
+    entry_nomor = create_entry(_("member.entry_no_hp"))
+    entry_alamat = create_entry(_("member.entry_alamat"))
+    entry_tipe = create_entry(_("member.entry_tipe"))
+    entry_ranting = create_entry(_("member.entry_ranting"))
 
     entries = [entry_nama, entry_nomor, entry_alamat, entry_tipe, entry_ranting, entry_kode_member]
 
@@ -68,23 +68,19 @@ def tambah_member_gui():
     
         try:
             tambah_member(nama=nama, alamat=alamat, nomor=nomor, tipe=tipe, ranting=ranting, kode_member=kode_member)
-            messagebox.showinfo("Berhasil", f"Member '{nama}' berhasil ditambahkan.")
+            messagebox.showinfo(_("member.berhasil"), f"Member '{nama}' successfully added.")
             for entry in entries: entry.delete(0, tk.END)
-            print("[DEBUG] refresh_tree aktif oleh", __name__)
             refresh_tree()
             update_filter_dropdowns()
         except Exception as e:
-            print("[ERROR]", e) #
-            messagebox.showerror("Gagal", str(e))
+            messagebox.showerror(_("member.gagal"), str(e))
 
-    print("[DEBUG] ISi dropdown tipe:", combo_tipe['values'])
-    print("[DEBUG] Isi dropdown ranting:", combo_ranting['values'])
-    tk.Button(popup, text="Simpan", command=simpan_member).pack(pady=10)
+    tk.Button(popup, text=_("member.simpan"), command=simpan_member).pack(pady=10)
 
 
 def import_member_excel():
     filepath = filedialog.askopenfilename(
-        title="Pilih File Excel",
+        title=(("member.title_pilih")),
         filetypes=[("Excel Files", "*.xlsx *.csv")]
     )
     if not filepath:
@@ -96,7 +92,7 @@ def import_member_excel():
             df = pd.read_csv(filepath)
         required_columns = {"Kode Member", "Nama", "Nomor HP", "Tipe Member", "Ranting"}
         if not required_columns.issubset(df.columns):
-            messagebox.showerror("Format Salah", f"Kolom wajid: {', '.join(required_columns)}")
+            messagebox.showerror(_("member.err_kolom"), f"Mandatory column: {', '.join(required_columns)}")
             return
         count = 0
         for _, row in df.iterrows():
@@ -112,27 +108,23 @@ def import_member_excel():
                 )
                 count += 1
             except Exception as e:
-                print("[ERROR] Gagal tambah:", row["Nama"], "-", e)
+                print("[ERROR] Failed to add:", row["Nama"], "-", e)
         
-        messagebox.showinfo("Import Selesai", f"{count} member berhasil ditambahkan.")
+        messagebox.showinfo("Import Complete", f"{count} Member successfully added.")
         refresh_tree()
         update_filter_dropdowns()
 
     except Exception as e:
-        print("[ERROR] Import gagal:", e)
-        messagebox.showerror("Gagal Import", str(e))
+        print("[ERROR] Import failed:", e)
+        messagebox.showerror("Import Failed", str(e))
 
 def on_tree_select(event):
     global selected_id
     selected_id = tree.focus()
     values = tree.item(selected_id)["values"]
-    print("[DEBUG] values", values)
-    print("[DEBUG] len values", len(values))
 
     if not selected_id:
-        print("[DEBUG] Tidak ada baris yang dipilih")
         return
-
     column_order = ["kode_member", "nama", "no_hp", "alamat", "tipe", "ranting"]
 
     for i, col in enumerate(column_order):
@@ -141,21 +133,17 @@ def on_tree_select(event):
             if i < len(values):
                 entry_map[col].insert(0, values[i])
 
-    print("[DEBUG]",selected_id)
-    print("[DEBUG] entry_map keys:", entry_map.keys())
-
 def edit_member_gui(parent):
     selected_item = tree.focus()
     if not selected_item:
-        messagebox.showwarning("Pilih Member yang ingin diedit.")
+        messagebox.showwarning(_("member.warning_pilih"))
         return
     values = tree.item(selected_item)["values"]
     if not values or len(values) < 6:
-        print("[DEBUG] Tidak ada data valid.")
         return
 
     popup = tk.Toplevel(parent)
-    popup.title("EDIT Member")
+    popup.title(_("member.pop_edit"))
     popup.geometry("400x400")
 
     def create_entry(label, value):
@@ -165,12 +153,12 @@ def edit_member_gui(parent):
         entry.pack(fill='x')
         return entry
     
-    entry_kode_member = create_entry("Kode Member", values[1])
-    entry_nama = create_entry("Nama", values[2])
-    entry_nomor = create_entry("Nomor HP", values[3])
-    entry_alamat = create_entry("Alamat", values[4])
-    entry_tipe = create_entry("Tipe Member", values[5])
-    entry_ranting = create_entry("Ranting", values[6])
+    entry_kode_member = create_entry(_("member.entry_kode"), values[1])
+    entry_nama = create_entry(_("member.entry_nama"), values[2])
+    entry_nomor = create_entry(_("member.entry_no_hp"), values[3])
+    entry_alamat = create_entry(_("member.entry_alamat"), values[4])
+    entry_tipe = create_entry(_("member.entry_alamat"), values[5])
+    entry_ranting = create_entry(_("member.entry_ranting"), values[6])
 
     def simpan_perubahan():
         try:
@@ -182,33 +170,29 @@ def edit_member_gui(parent):
                           entry_ranting.get(),
                           entry_kode_member.get()
             )
-            messagebox.showinfo("Edit Sukses", "Data Member Berhasil diperbarui.")
+            messagebox.showinfo(_("member.msg_sukses"), _("member.msg_perbarui"))
             refresh_tree()
             popup.destroy()
         except Exception as e:
             messagebox.showerror("Error", str(e))
     # Tombol di jendela edit
 
-    tk.Button(popup, text="Simpan Perubahan", command=simpan_perubahan).pack(pady=5)
-    tk.Button(popup, text="Batal", command=popup.destroy).pack()
-
+    tk.Button(popup, text=_("member.btn_simpan"), command=simpan_perubahan).pack(pady=5)
+    tk.Button(popup, text=_("member.batal"), command=popup.destroy).pack()
 
 def hapus_member_gui():
-    print("[DEBUG]hapus", selected_id)
     if not selected_id:
-        messagebox.showwarning("Pilih member yang ingin dihapus.")
+        messagebox.showwarning(_("member.warr_pilih_member"))
         return
-    if messagebox.askyesno("Hapus Member", "Yakin ingin menghapus member ini?"):
+    if messagebox.askyesno(_("member.msg_hapus"), _("member.msg_ask_yesno")):
         try:
             hapus_member(selected_id)
-            messagebox.showinfo("Info", "Member berhasil dihapus.")
-            print("[DEBUG] refresh_tree aktif oleh", __name__)
+            messagebox.showinfo("Info", _("member.msg_berhasil_hapus"))
             refresh_tree()
         except Exception as e:
-            messagebox.showerror("Gagal Hapus", str(e))
+            messagebox.showerror(_("member.err_gagal_hapus"), str(e))
 
 def buat_frame_member(parent, set_judul_modul):
-    print("[DEBUG] fungsi buat_frame_member dimulai.")
     global window, entry_map, entry_nama, entry_nomor, entry_alamat, entry_tipe, entry_ranting 
     global tree, entries, selected_id, entry_kode_member
     global entry_search, combo_tipe, combo_ranting
@@ -223,18 +207,15 @@ def buat_frame_member(parent, set_judul_modul):
     build_footer(frame)
 
     refresh_tree()
-    print("[DEBUG] data awal", semua_member())
     frame.pack(fill="both", expand=True)
 
-    set_judul_modul("Member")
+    set_judul_modul(_("member.set_judul_modul"))
 
 def build_header(frame):
-    # Header dan Tombol Aksi
-
     frame_header = tk.Frame(frame, bg="#f4f4f4")
     frame_header.pack(pady=10)
-    tk.Button(frame_header, text="Tambah Member", command=tambah_member_gui).pack(side=tk.LEFT, padx=6)
-    tk.Button(frame_header, text="Import dari Excel", command=import_member_excel).pack(side=tk.LEFT, padx=6)
+    tk.Button(frame_header, text=_("member.btn_tambah"), command=tambah_member_gui).pack(side=tk.LEFT, padx=6)
+    tk.Button(frame_header, text=_("member.btn_import"), command=import_member_excel).pack(side=tk.LEFT, padx=6)
 
 def build_filter_area(frame):
     global combo_tipe, combo_ranting
@@ -243,8 +224,6 @@ def build_filter_area(frame):
     frame_filter.pack(pady=10)
 
     all_member = semua_member()
-    print(f"[DEBUG] Jumlah member: {len(all_member)}")
-    print(f"[DEBUG] Contoh data: {all_member[:3]}")
     # Ambil data unik
     tipe_values = sorted(set([d["tipe"] for d in all_member if d.get("tipe") not in [None, ""]]))
     if not tipe_values: tipe_values = ["(Tidak ada data)"]
@@ -256,12 +235,12 @@ def build_filter_area(frame):
     if not ranting_values: ranting_values = ["(Tidak ada data)"]
 
     # Dropdown Tipe
-    tk.Label(frame_filter, text="Filter Tipe").pack(side='left')
+    tk.Label(frame_filter, text=_("member.lbl_filter_tipe")).pack(side='left')
     combo_tipe = ttk.Combobox(frame_filter, values=tipe_values)
     combo_tipe.pack(side='left', padx=5)
 
     # Dropdown Ranting
-    tk.Label(frame_filter, text="Filter Ranting").pack(side='left')
+    tk.Label(frame_filter, text=_("member.lbl_filter_ranting")).pack(side='left')
     combo_ranting = ttk.Combobox(frame_filter, values=ranting_values)
     combo_ranting.pack(side='left', padx=5)
 
@@ -269,11 +248,9 @@ def build_filter_area(frame):
     def reset_filter():
         combo_tipe.set("")
         combo_ranting.set("")
-        print("[DEBUG] refresh_tree aktif oleh", __name__)
         refresh_tree()  # Tampikan semua member
 
     def filter_data():
-        print("[DEBUG] masuk ke filter_data")
         tipe_selected = combo_tipe.get()
         ranting_selected = combo_ranting.get()
         hasil = [d for d in all_member if
@@ -282,13 +259,11 @@ def build_filter_area(frame):
         
         tree.delete(*tree.get_children())
         for row in hasil:
-            print("[DEBUG] row:", row)
             tree.insert("", tk.END, iid=row["id_member"], values=(row["id_member"],
                 row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"]
             ))
 
-
-    tk.Button(frame_filter, text="Reset Filter", command=reset_filter).pack(side=tk.LEFT, padx=4)        
+    tk.Button(frame_filter, text=_("member.btn_reset"), command=reset_filter).pack(side=tk.LEFT, padx=4)        
     tk.Button(frame_filter, text="Filter", command=filter_data).pack(side='left', padx=5)
 
 def build_search_area(frame):
@@ -297,15 +272,14 @@ def build_search_area(frame):
     frame_search = tk.Frame(frame, bg="#f4f4f4")
     frame_search.pack(pady=5)
 
-    tk.Label(frame_search, text="Cari Nama Member:", bg="#f4f4f4").pack(side=tk.LEFT)
+    tk.Label(frame_search, text=_("member.lbl_search"), bg="#f4f4f4").pack(side=tk.LEFT)
     entry_search = tk.Entry(frame_search, width=30)
     entry_search.pack(side=tk.LEFT, padx=4)
 
     def cari_member_gui():
-        print("[DEBUG] masuk ke cari_member_gui")
         keyword = entry_search.get()
         if not keyword.strip():
-            messagebox.showwarning("Pencarian Kosong", "Masukkan kata kunci nama member.")
+            messagebox.showwarning(_("member.warr_kosong"), _("member.warr_kata_kunci"))
             return
         from app.core.member_core import cari_member
         hasil = cari_member(keyword)
@@ -315,7 +289,7 @@ def build_search_area(frame):
                 row["kode_member"], row["nama"], row["no_hp"], row["alamat"], row["tipe"], row["ranting"] 
             ))
 
-    tk.Button(frame_search, text="Cari", command=lambda: cari_member_gui()).pack(side=tk.LEFT, padx=4)
+    tk.Button(frame_search, text=_("member.cari"), command=lambda: cari_member_gui()).pack(side=tk.LEFT, padx=4)
 
 def build_treeview(frame):
     global tree
@@ -323,12 +297,12 @@ def build_treeview(frame):
     columns = ("id_member", "kode_member", "nama", "no_hp", "alamat", "tipe", "ranting", )
     column_labels = {
         "id_member": "ID",
-        "kode_member": "Kode Member",
-        "nama": "Nama",
-        "no_hp": "Nomor HP",
-        "alamat": "Alamat",
-        "tipe": "Tipe Member",
-        "ranting": "Ranting",
+        "kode_member": _("member.entry_kode"),
+        "nama": _("member.entry_nama"),
+        "no_hp": _("member.entry_no_hp"),
+        "alamat": _("member.entry_alamat"),
+        "tipe": _("member.entry_tipe"),
+        "ranting": _("member.entry_ranting"),
 
     }
     frame_treeview = tk.Frame(frame)
@@ -356,12 +330,10 @@ def build_footer(frame):
     frame_footer = tk.Frame(frame, bg="#f4f4f4")
     frame_footer.pack(pady=10)
 
-    tk.Button(frame_footer, text="Edit Member", command=lambda: edit_member_gui(frame)).pack(side=tk.LEFT, padx=8)
-    tk.Button(frame_footer, text="Hapus Member", command=hapus_member_gui).pack(side=tk.LEFT, padx=8)
-
+    tk.Button(frame_footer, text=_("member.btn_edit"), command=lambda: edit_member_gui(frame)).pack(side=tk.LEFT, padx=8)
+    tk.Button(frame_footer, text=_("member.btn_hapus"), command=hapus_member_gui).pack(side=tk.LEFT, padx=8)
 
     refresh_tree()
-    print("[DEBUG] data awal", semua_member())
     frame.pack(fill="both", expand=True)
 
 if __name__ == "__main__":

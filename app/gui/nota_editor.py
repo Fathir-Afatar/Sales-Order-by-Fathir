@@ -1,5 +1,6 @@
 # Tempat menyusun identitas toko dalam bentuk nota, sepert kop, logo, ucapan terimakasih, catatan footer.
 
+# Standard Library
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import json
@@ -68,7 +69,6 @@ def preview_nota():
     
 
     # Dummy data transaksi
-
     transaksi_dummy = {
         "tanggal": "2025-07-18",
         "id": "TRX0021",
@@ -88,7 +88,6 @@ def preview_nota():
     tk.Label(frame, text=f"Ranting: {ranting}").pack(anchor="w")
 
     #Logo + Kop Horizontal
-
     logo_path = config.get("logo", "")
     top_frame = tk.Frame(frame)
     top_frame.pack()
@@ -106,11 +105,9 @@ def preview_nota():
     kop_label.pack(side="left", padx=10)
     
     # Garis
-
     tk.Label(frame, text="-" * 45).pack()
 
     # Info transaksi
-
     info = transaksi_dummy
     tk.Label(frame, text=f"Tanggal: {info['tanggal']} ID:{info['id']}").pack(anchor="w")
     tk.Label(frame, text=f"Member: {info['member']} Ranting: {ranting}").pack(anchor="w")
@@ -128,7 +125,6 @@ def preview_nota():
     tk.Label(frame, text=f"Total: {'':.25} Rp{total:,},", font=("Helvetica", 10, "bold")).pack(anchor="e", pady=5)
 
     # Footer / Ucapan
-
     tk.Label(frame, text=config.get("foooter", ""), font=("Helvetica", 9, "italic")).pack()
     
 

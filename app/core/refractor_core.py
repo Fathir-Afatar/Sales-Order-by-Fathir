@@ -1,10 +1,12 @@
+# Third-party
 from datetime import datetime
+
+# Local application
 from app.constants.config import get_connection
 
 conn = get_connection()
 
 # Get_product untuk ambil detail produk dari DB
-
 def ambil_produk(identifier, by_kode:True):
     conn = get_connection()
     cursor = conn.cursor()
@@ -24,7 +26,6 @@ def ambil_produk(identifier, by_kode:True):
     return None
 
 # Fungsi kurangi stok produk
-
 def kurang_stok(id_produk, jumlah):
     conn = get_connection()
     cursor = conn.cursor()
@@ -33,7 +34,6 @@ def kurang_stok(id_produk, jumlah):
     conn.close()
 
 # Fungsi Simpan transaksi penjualan
-
 def simpan_transaksi(nama_member, keranjang, total, waktu, voucher_kode=None):
     conn = get_connection()
     cursor = conn.cursor()
@@ -62,7 +62,6 @@ def simpan_transaksi(nama_member, keranjang, total, waktu, voucher_kode=None):
     return id_transaksi
 
 # Validasi Voucher
-
 def cek_voucher(kode, nama_member):
     conn = get_connection()
     cursor = conn.cursor()

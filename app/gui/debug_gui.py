@@ -1,11 +1,15 @@
+# Third party
 import tkinter as tk
 from tkinter import ttk
+
+# Local application
 from app.core.debug_core import ambil_log_terakhir
 from app.core.debug_core import cek_status_database, cek_status_printer
 from app.core.pengaturan_core import simulasi_cetak_nota
+from app.translator import _
 
 def buka_debug_gui(parent, set_judul_modul):
-    set_judul_modul("Debug")
+    set_judul_modul(_("debug.app_title"))
     frame = tk.Frame(parent, bg="#f4f4f4")
     frame.pack(fill="both", expand=True)
 
@@ -13,17 +17,16 @@ def buka_debug_gui(parent, set_judul_modul):
     notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
     # Tab Log
-
     tab_log = tk.Frame(notebook, bg="#f4f4f4")
-    notebook.add(tab_log, text="Log Sistem")
+    notebook.add(tab_log, text= _("debug.tab_log"))
 
     tab_status = tk.Frame(notebook, bg="#f4f4f4")
-    notebook.add(tab_status, text="Status Sistem")
+    notebook.add(tab_status, text= _("debug.tab_sistem"))
 
     tab_tes = tk.Frame(notebook, bg="#f4f4f4")
-    notebook.add(tab_tes, text="Tes Cetak")
+    notebook.add(tab_tes, text= _("debug.tab_tes"))
 
-    status_label = tk.Label(tab_status, text="Status Database:", bg="#f4f4f4")
+    status_label = tk.Label(tab_status, text="debug.status_label", bg="#f4f4f4")
     status_label.pack(anchor="w", padx=10, pady=5)
 
     status_area = tk.Text(tab_status, height=10, bg="#f4f4f4", font=("Courier", 10))
@@ -32,7 +35,7 @@ def buka_debug_gui(parent, set_judul_modul):
     log_area = tk.Text(tab_log, bg="#ffffff", font=("Courier", 10))
     log_area.pack(fill="both", expand=True, padx=10, pady=10)
 
-    printer_label = tk.Label(tab_status, text="Status Printer:", bg="#f4f4f4")
+    printer_label = tk.Label(tab_status, text= _("debug.printer_label"), bg="#f4f4f4")
     printer_label.pack(anchor="w", padx=10, pady=5)
 
     printer_area = tk.Text(tab_status, height=5, bg="#f4f4f4", font=("Courier", 10))
@@ -55,15 +58,15 @@ def buka_debug_gui(parent, set_judul_modul):
         for k, v in status.items():
             status_area.insert("end", f"{k}: {v}\n")
     
-    tk.Button(tab_status, text="Refresh Status", command=refresh_status).pack(pady=5)
+    tk.Button(tab_status, text=_("debug.btn_tab_status"), command=refresh_status).pack(pady=5)
     refresh_status()
 
-    tk.Button(tab_log, text="Refresh Log", command=refresh_log).pack(pady=5)
+    tk.Button(tab_log, text=_("debug.btn_tab_log"), command=refresh_log).pack(pady=5)
 
-    tk.Button(tab_status, text="Refresh Printer", command=refresh_printer).pack(pady=5)
+    tk.Button(tab_status, text=_("debug.btn_tab_status_printer"), command=refresh_printer).pack(pady=5)
     refresh_printer()
 
-    tk.Label(tab_tes, text="ID transaksi untuk Simulasi:", bg="#f4f4f4").pack(pady=5)
+    tk.Label(tab_tes, text=_("debug.btn_tab_test"), bg="#f4f4f4").pack(pady=5)
     entry_id = tk.Entry(tab_tes)
     entry_id.pack(pady=5)
 
@@ -74,12 +77,12 @@ def buka_debug_gui(parent, set_judul_modul):
         transaksi_id = entry_id.get().strip()
         if not transaksi_id.isdigit():
             hasil_simulasi.delete("1.0", "end")
-            hasil_simulasi.insert("end", "ID Transaksi harus berupa angka.\n")
+            hasil_simulasi.insert("end", _("debug.err_id_angka") + "\n")
             return
         hasil = simulasi_cetak_nota(int(transaksi_id))
         hasil_simulasi.delete("1.0", "end")
         for k, v in hasil.items():
             hasil_simulasi.insert("end", f"{k}: {v}\n")
     
-    tk.Button(tab_tes, text="Simulasi Cetak Nota", command=jalankan_simulasi).pack(pady=5)
+    tk.Button(tab_tes, text= _("debug.btn_test_simulasi"), command=jalankan_simulasi).pack(pady=5)
     

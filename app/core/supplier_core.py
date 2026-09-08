@@ -1,8 +1,7 @@
+# Local Application
 from app.constants.config import get_connection
-conn = get_connection()
 
 # Add Supplier
-
 def tambah_supplier(data):
     conn = get_connection()
     cursor = conn.cursor()
@@ -16,8 +15,6 @@ def tambah_supplier(data):
                     data.get("kode_supplier")))
     conn.commit()
     conn.close()
-
-# Edit Supplier
 
 def edit_supplier(id_supplier, data):
     conn = get_connection()
@@ -42,16 +39,12 @@ def edit_supplier(id_supplier, data):
     conn.close()
     return True
 
-# Delete Supplier
-
 def hapus_supplier(id_supplier):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM supplier WHERE id_supplier = ?", (id_supplier,))
     conn.commit()
     conn.close()
-
-# Take All Supplier
 
 def semua_supplier():
     conn = get_connection()
@@ -61,8 +54,6 @@ def semua_supplier():
     columns = [col[0] for col in cursor.description]
     conn.close()
     return [dict(zip(columns, row)) for row in rows]
-
-# Take All Supplier Base on ID
 
 def ambil_supplier():
     conn = get_connection()

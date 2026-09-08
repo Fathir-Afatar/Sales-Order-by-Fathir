@@ -1,7 +1,9 @@
+# Third-party
 from datetime import datetime
+
+# Local application
 from app.core.product_core import ubah_stok_dan_catat_log
 from app.core.stok_core import get_stok_terakhir
-
 from app.constants.config import get_connection
 
 def tambah_pembelian(supplier_id: str, daftar_barang:list):
@@ -103,7 +105,6 @@ def hapus_pembelian(pembelian_id):
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        # Ambil detail dulu untuk rollback ke stok
         cursor.execute("""
             SELECT kode_produk, qty FROM detail_pembelian
             WHERE pembelian_id = ?
@@ -112,10 +113,8 @@ def hapus_pembelian(pembelian_id):
         detail = cursor.fetchall()
 
         for kode_produk, qty in detail:
-            # Kurangi stok karena pembelian dibatalkan
             ubah_stok_dan_catat_log(kode_produk, -qty, "PEMBATALAN")
 
-        # Hapus detail dan header
         cursor.execute("DELETE FROM detail_pembelian WHERE pembelian_id = ?", (pembelian_id,))
         cursor.execute("DELETE FROM transaksi_pembelian WHERE id_pembelian = ?", (pembelian_id,))
         conn.commit()
@@ -143,9 +142,9 @@ def get_detail_pembelian(pembelian_id):
 def update_pembelian(pembelian_id, hasil_koreksi):
     conn = get_connection()
     cursor = conn.cursor()
-    # Hapus detail lama
+
     cursor.execute("DELETE FROM detail_pembelian WHERE pembelian_id = ?", (pembelian_id,))
-    # Tambahkan detail baru
+
     for item in hasil_koreksi:
         cursor.execute("""
             INSERT INTO detail_pembelian (pembelian_id, kode_produk, qty, harga_beli)
@@ -161,11 +160,10 @@ def update_pembelian(pembelian_id, hasil_koreksi):
     conn.commit()
     conn.close()
 
-
-def hitung_total_keranjang(daftar_barang):  # Untuk menampilkan total sebelum simpan
+def hitung_total_keranjang(daftar_barang):
     return sum(item["qty"] * item["harga_beli"] for item in daftar_barang)
 
-def ambil_supplier_nama(supplier_id): # Untuk tampilkan histori atau detail pembelian
+def ambil_supplier_nama(supplier_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT nama FROM supplier WHERE id = ?", (supplier_id,))
@@ -173,7 +171,7 @@ def ambil_supplier_nama(supplier_id): # Untuk tampilkan histori atau detail pemb
     conn.close()
     return hasil [0] if hasil else "-"
 
-def get_produk_nama(kode_produk): # memperjelas tampilan detail pembelian
+def get_produk_nama(kode_produk):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT nama_produk FROM produk WHERE kode_produk = ?", (kode_produk,))

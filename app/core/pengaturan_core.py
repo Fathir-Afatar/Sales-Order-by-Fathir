@@ -1,15 +1,19 @@
+# Standard library
 import json
 import os
 import usb.core
 import usb.backend.libusb1
-#from escpos.printer import Usb
-from datetime import datetime
 import time
 import sqlite3
-from app.constants.config import get_connection
-from app.core.debug_core import log_cetak_berhasil, log_cetak_gagal, log_info, log_error
-from app.core.printer_core import ambil_printer_default
+#from escpos.printer import Usb
 
+# Third-party
+from datetime import datetime
+
+# Local application
+from app.constants.config import get_connection
+from app.core.debug_core import log_cetak_gagal, log_info, log_error
+from app.core.printer_core import ambil_printer_default
 from local_escpos.printer import Usb
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -137,7 +141,6 @@ def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ong
         lines.append(baris.strip().center(LEBAR_BARIS))
     lines.append("=" * LEBAR_BARIS)
     return "\n".join(lines)
-
 
 def cetak_nota_thermal(transaksi_id):
     conn = get_connection()

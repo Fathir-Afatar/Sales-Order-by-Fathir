@@ -1,9 +1,11 @@
-from app.constants.config import get_connection
-conn = get_connection
+# Third party
 import sqlite3
 
+# Local application
+from app.constants.config import get_connection
+conn = get_connection
+
 def get_detail_transaksi(id_transaksi, tipe):
-    print("Mendapatkan detail transaksi untuk tipe:", tipe)
     conn = get_connection()
     conn.row_factory = sqlite3.Row # Akses kolom by name
 
@@ -48,7 +50,6 @@ def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
     cursor = conn.cursor()
 
     # Total Penjualan
-
     cursor.execute("""
         SELECT SUM(total_harga) FROM transaksi_penjualan
         WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
@@ -56,7 +57,6 @@ def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
     total_penjualan = cursor.fetchone()[0] or 0
 
     # Total Pembelian
-
     cursor.execute("""
         SELECT SUM(total_harga) FROM transaksi_pembelian
         WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
@@ -64,7 +64,6 @@ def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
     total_pembelian = cursor.fetchone()[0] or 0
 
     # Total Pengeluaran
-
     cursor.execute("""
         SELECT SUM(nominal) FROM pengeluaran
         WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
@@ -126,7 +125,6 @@ def get_ringkasan_member(tanggal_awal, tanggal_akhir):
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    print("[DEBUG] Menjalankan query ringkasan member:")
     
     laba_map = get_laba_member(tanggal_awal, tanggal_akhir)
 
@@ -145,7 +143,6 @@ def get_ringkasan_member(tanggal_awal, tanggal_akhir):
 
     hasil = []
     rows = cursor.fetchall()
-    print("[DEBUG] Jumlah baris hasil:", len(rows))
     for row in rows:
         print(dict(row))
         id_member = row["id_member"]

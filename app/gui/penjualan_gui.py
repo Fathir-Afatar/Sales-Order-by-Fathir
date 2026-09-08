@@ -1,17 +1,20 @@
+# Standard Library
+import sys, os
+
+# Third-party
 import tkinter as tk
-from datetime import datetime
-import csv
-import time
 from PIL import Image, ImageDraw, ImageFont
-from tkinter import ttk, messagebox, Listbox
-from app.core.penjualan_core import proses_penjualan, get_nama_pembeli, get_daftar_member
+from tkinter import ttk, messagebox
+
+# Local application
+from app.core.penjualan_core import (proses_penjualan, get_daftar_member
+                                     , load_transaksi_rincian, handler_cek_nama_member
+                                     , get_selected_transaksi_id, get_detail_transaksi)
 from app.core.product_core import semua_produk
 from app.constants.config import get_connection
-from app.core.member_core import semua_member
 from app.core.pengaturan_core import format_nota_thermal, cetak_nota_thermal
-from app.core.debug_core import log_fungsi
+from app.translator import _, i18n
 
-import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 transaksi_terakhir = None
@@ -19,31 +22,27 @@ transaksi_terakhir = None
 def buat_frame_penjualan(parent, set_judul_modul):
     frame = tk.Frame(parent)
     frame.pack(fill="both", expand=True)
-    set_judul_modul("Penjualan")
+    set_judul_modul(_("penjualan.set_judul_modul"))
 
     # Tabs & Produk
-
     tab_transaksi, tab_rincian = buat_notebook_penjualan(frame)
     produk_list, produk_display_list = ambil_produk_dan_display()
     form_refs = buat_form_input_penjualan(tab_transaksi, produk_display_list)
     tree, keranjang = buat_keranjang_penjualan(tab_transaksi)
 
     # Bind search dan pilih produk
-
     form_refs["produk_entry"].bind("<KeyRelease>", lambda e: filter_produk(form_refs, produk_display_list))
     form_refs["produk_listbox"].bind("<<ListboxSelect>>", lambda e: pilih_produk(form_refs))
     form_refs["ongkir_entry"].bind("<KeyRelease>", lambda e: update_total(form_refs, keranjang))
-    # ------- State Transaksi -----
 
+    # ------- State Transaksi -----
     state_transaksi = {
         "terakhir_id": None,
         "pembeli": "-",
         "ongkir": 0,
         "total":0
     }
-    
     #------Handler Tombol -----------
-
     def tambah_ke_keranjang():
         tambah_item_ke_keranjang(form_refs, produk_display_list, keranjang, tree)
     
@@ -73,15 +72,17 @@ def buat_frame_penjualan(parent, set_judul_modul):
     }
 
     buat_tombol_penjualan(form_refs["tombol_frame"], tombol_handlers, state_transaksi)
-
     # ------- Tab Rincian ------
 
     rincian_tree, detail_frame = buat_tab_rincian(tab_rincian)
     load_transaksi_rincian(rincian_tree)
 
-    tk.Button(detail_frame, text="Lihat & Cetak Nota", command=lambda: lihat_detail_transaksi_cetak(rincian_tree)).grid(row=0, column=0, padx=5)
+    tk.Button(detail_frame, text=_("penjualan.btn_detail_frame"), command=lambda: 
+              lihat_detail_transaksi_cetak(rincian_tree)).grid(row=0, column=0, padx=5)
 
-    tk.Button(form_refs["form_frame"], text="Cek", command=lambda:handler_cek_nama_member(form_refs["member_var"], form_refs["nama_member_label"], form_refs["daftar_member"])).grid(row=3, column=2, padx=5)
+    tk.Button(form_refs["form_frame"], text=_("penjualan.cek"), command=lambda:
+              handler_cek_nama_member(form_refs["member_var"], form_refs["nama_member_label"]
+                                      , form_refs["daftar_member"])).grid(row=3, column=2, padx=5)
 
     return frame
 
@@ -92,8 +93,8 @@ def buat_notebook_penjualan(frame):
     tab_transaksi = tk.Frame(notebook)
     tab_rincian = tk.Frame(notebook)
 
-    notebook.add(tab_transaksi, text="Transaksi")
-    notebook.add(tab_rincian, text="Rincian")
+    notebook.add(tab_transaksi, text=_("penjualan.tab_transaksi"))
+    notebook.add(tab_rincian, text=_("penjualan.tab_rincian"))
     return tab_transaksi, tab_rincian
 
 def ambil_produk_dan_display():
@@ -137,7 +138,7 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     ongkir_entry = tk.Entry(form_frame, width=15)
     ongkir_entry.grid(row=6, column=1, sticky="w", padx=5)
     
-    nama_member_label = tk.Label(form_frame, text="Nama Member:-", font=("Arial", 10), fg="blue")
+    nama_member_label = tk.Label(form_frame, text=_("penjualan.nama_member_label"), font=("Arial", 10), fg="blue")
     nama_member_label.grid(row=3, column=3, padx=5, pady=2, sticky="w")
 
     total_label = tk.Label(form_frame, textvariable=total_var, font=("Segoe UI", 12, "bold"), anchor="e")
@@ -161,13 +162,13 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     member_entry.bind("<KeyRelease>", update_member_listbox)
     member_listbox.bind("<<ListboxSelect>>", pilih_member)
 
-    tk.Label(form_frame, text="Pilih Produk").grid(row=0, column=0, sticky="w")
-    tk.Label(form_frame, text="Jumlah").grid(row=2, column=0, sticky="w")
-    tk.Label(form_frame, text="Nama Member").grid(row=3, column=0, sticky="w")
-    tk.Label(form_frame, text="Harga Manual (Opsional)").grid(row=4, column=0, sticky="w")
-    tk.Label(form_frame, text="Ongkos Kirim (opsional)").grid(row=6, column=0, sticky="w")
-    tk.Label(form_frame, text="* Kosongkan jika ingin pakai harga default", fg="gray").grid(row=5, column=1, sticky="w")
-    tk.Label(form_frame, text="*Kosongkan jika tidak ada ongkir", fg="gray").grid(row=7, column=1, sticky="w")
+    tk.Label(form_frame, text=_("penjualan.pilih_produk")).grid(row=0, column=0, sticky="w")
+    tk.Label(form_frame, text=_("penjualan.jumlah")).grid(row=2, column=0, sticky="w")
+    tk.Label(form_frame, text=_("penjualan.nama_member")).grid(row=3, column=0, sticky="w")
+    tk.Label(form_frame, text=_("penjualan.harga_manual")).grid(row=4, column=0, sticky="w")
+    tk.Label(form_frame, text=_("penjualan.ongkir")).grid(row=6, column=0, sticky="w")
+    tk.Label(form_frame, text=_("penjualan.label_harga_default"), fg="gray").grid(row=5, column=1, sticky="w")
+    tk.Label(form_frame, text=_("penjualan.label_ongkir"), fg="gray").grid(row=7, column=1, sticky="w")
 
     return {
         "form_frame": form_frame,
@@ -195,8 +196,11 @@ def buat_keranjang_penjualan(tab_transaksi):
     keranjang_scroll = tk.Scrollbar(keranjang_frame, orient="vertical")
     keranjang_scroll.pack(side="right", fill="y")
 
-    tree = ttk.Treeview(keranjang_frame, columns=("Produk", "Jumlah", "Harga", "Subtotal"), show="headings", yscrollcommand=keranjang_scroll.set)
-    for col in ("Produk", "Jumlah", "Harga", "Subtotal"):
+    tree = ttk.Treeview(keranjang_frame
+                        , columns=(_("penjualan.produk"), _("penjualan.jumlah")
+                                   , _("penjualan.harga"), _("penjualan.subtotal"))
+                                   , show="headings", yscrollcommand=keranjang_scroll.set)
+    for col in (_("penjualan.produk"), _("penjualan.jumlah"), _("penjualan.harga"), _("penjualan.subtotal")):
         tree.heading(col, text=col)
         tree.column(col, anchor="center")
     tree.pack(fill="both", expand=True)
@@ -231,14 +235,14 @@ def tambah_item_ke_keranjang(refs, produk_display_list, keranjang, tree):
     nama_produk_gui = refs["produk_var"].get()
     produk_data = produk_display_list.get(nama_produk_gui)
     if not produk_data:
-        messagebox.showerror("Error", "Pilih produk dulu.")
+        messagebox.showerror(_("penjualan.error"), _("penjualan.err_pilih_produk"))
         return
     
     harga_input = refs["harga_manual_entry"].get().strip()
     try:
         harga_satuan = float(harga_input) if harga_input else produk_data["harga_jual"]
     except ValueError:
-        messagebox.showerror("Error", "Harga manual harus berupa angka.")
+        messagebox.showerror(_("penjualan.error"), _("penjualan.err_harga_manual"))
         return
 
     try:
@@ -246,7 +250,7 @@ def tambah_item_ke_keranjang(refs, produk_display_list, keranjang, tree):
         if jumlah <= 0:
             raise ValueError
     except ValueError:
-        messagebox.showerror("Error", "Jumlah harus berupa angka positif.")
+        messagebox.showerror(_("penjualan.error"), _("penjualan.err_jumlah_positif"))
         return
     
     produk_id = produk_data["id_produk"]
@@ -259,7 +263,6 @@ def tambah_item_ke_keranjang(refs, produk_display_list, keranjang, tree):
         "harga_satuan": harga_satuan,
         "subtotal": subtotal
     })
-    print("[DEBUG] Item ditambahkan ke keranjang:", keranjang[-1])
 
     tree.insert("", tk.END, values=(nama_produk_gui, jumlah, f"Rp {harga_satuan:,.0f}", f"Rp {subtotal:,.0f}"))
     refs["jumlah_entry"].delete(0, tk.END)
@@ -280,7 +283,7 @@ def update_total(refs, keranjang):
 def hapus_produk_terpilih(tree, keranjang, update_total_fn):
     selected_item = tree.selection()
     if not selected_item:
-        messagebox.showwarning("Hapus Produk", "Pilih baris produk yang ingin dihapus.")
+        messagebox.showwarning(_("penjualan.war_hapus"), _("penjualan.pilih_baris_produk"))
         return
     item_values = tree.item(selected_item)["values"]
     nama_produk = item_values[0]
@@ -314,7 +317,8 @@ def preview_nota(transaksi_id, pembeli, keranjang, total, status="DRAFT", ongkir
     text_area.config(state="disabled")
     text_area.pack(fill="both", expand=True, padx=10, pady=10)
 
-    cetak_button = tk.Button(preview_window, text="Cetak ke Printer Thermal", font=("Arial", 10), bg="green", fg="white", command=lambda: cetak_nota_thermal(transaksi_id))
+    cetak_button = tk.Button(preview_window, text=_("penjualan.btn_cetak")
+                             , font=("Arial", 10), bg="green", fg="white", command=lambda: cetak_nota_thermal(transaksi_id))
     cetak_button.pack(pady=10)
 
 
@@ -348,10 +352,10 @@ def proses_transaksi(refs, keranjang, tree, rincian_tree, state_transaksi, updat
         preview_nota(transaksi_id, pembeli, keranjang, total, ongkir=ongkir)
         tree.after(100, lambda: load_transaksi_rincian(rincian_tree))
         reset_transaksi(refs, keranjang, tree, update_total_fn)
-        messagebox.showinfo("Sukses", f"Transaksi #{transaksi_id} berhasil disimpan")
+        messagebox.showinfo(_("penjualan.sukses"), _("penjualan.bsg_transaksi_sukses").format(id=transaksi_id),)
     
     except Exception as e:
-        messagebox.showerror("Error", str(e))
+        messagebox.showerror(_("penjualan.error"), str(e))
     finally:
         conn.close()
 
@@ -360,17 +364,18 @@ def simpan_nota_csv(transaksi_id, pembeli, keranjang, total, ongkir=0):
     filename = f"nota_{transaksi_id}.txt"
     with open(filename, "w", newline="", encoding="utf-8") as f:
         f.write(nota)
-    messagebox.showinfo("Nota", f"Nota transaksi disimpan sebagai {filename}")
-
+    messagebox.showinfo(_("penjualan.nota"), _("penjualan.msg_nota_transaksi").format(file=filename),)
 
 def buat_tombol_penjualan(frame, handlers, state_refs):
-    tk.Button(frame, text="Tambah ke Keranjang", command=handlers["tambah"]).grid(row=0, column=0, padx=5)
-    tk.Button(frame, text="Simpan", command=handlers["simpan"]).grid(row=0, column=1, padx=5)
-    tk.Button(frame, text="Hapus Produk", command=handlers["hapus"]).grid(row=0, column=2, padx=5)
+    tk.Button(frame, text=_("penjualan.tambah_keranjang"), command=handlers["tambah"]).grid(row=0, column=0, padx=5)
+    tk.Button(frame, text=_("penjualan.simpan"), command=handlers["simpan"]).grid(row=0, column=1, padx=5)
+    tk.Button(frame, text=_("penjualan.hapus_produk"), command=handlers["hapus"]).grid(row=0, column=2, padx=5)
     tk.Button(frame, text="Reset", command=handlers["reset"]).grid(row=0, column=3, padx=5)
 
-
 def buat_treeview_keranjang(frame, scroll):
+    """
+    Deprecated
+    """
     tree = ttk.Treeview(frame, columns=("Produk", "Jumlah", "Harga", "Subtotal"), show="headings", height=10, yscrollcommand=scroll.set)
     for col in ("Produk", "Jumlah", "Harga", "Subtotal"):
         tree.heading(col, text=col)
@@ -380,12 +385,15 @@ def buat_treeview_keranjang(frame, scroll):
     return tree
 
 def buat_label_total(frame, total_var):
+    """
+    Deprecated
+    """
     label = ttk.Label(frame, textvariable=total_var, font=("Arial", 12, "bold"))
     label.grid(row=3, column=0, columnspan=4, pady=10)
     return label
 
 def buat_tab_rincian(tab_rincian):
-    tk.Label(tab_rincian, text="Daftar Transaksi Tersimpan", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=10, pady=10)
+    tk.Label(tab_rincian, text=_("penjualan.label_rincian"), font=("Arial", 12, "bold")).grid(row=0, column=0, padx=10, pady=10)
 
     tree_frame = tk.Frame(tab_rincian)
     tree_frame.grid(row=1, column=0, padx=10, pady=10)
@@ -393,8 +401,10 @@ def buat_tab_rincian(tab_rincian):
     scroll = tk.Scrollbar(tree_frame, orient="vertical")
     scroll.pack(side="right", fill="y")
 
-    tree = ttk.Treeview(tree_frame, columns=("ID", "Tanggal", "Total", "Status"), show="headings", height=15, yscrollcommand=scroll.set)
-    for col in ("ID", "Tanggal", "Total", "Status"):
+    tree = ttk.Treeview(tree_frame, columns=(
+        _("penjualan.id"), _("penjualan.tanggal"), _("penjualan.total"), _("penjualan.status")
+        ), show="headings", height=15, yscrollcommand=scroll.set)
+    for col in (_("penjualan.id"), _("penjualan.tanggal"), _("penjualan.total"), _("penjualan.status")):
         tree.heading(col, text=col)
         tree.column(col, anchor="center", width=120)
     tree.pack(side="left", fill="both", expand=True)
@@ -404,43 +414,28 @@ def buat_tab_rincian(tab_rincian):
     detail_frame.grid(row=2, column=0, pady=10)
 
     return tree, detail_frame
-
-def get_selected_transaksi_id(tree):
-    selected = tree.selection()
-    if not selected:
-        messagebox.showwarning("Pilih Transaksi", "Pilih transaksi terlebih dahulu.")
-        return None
-    item = tree.item(selected[0])
-    return item["values"][0]
     
 def lihat_detail_transaksi_cetak(tree):
     transaksi_id = get_selected_transaksi_id(tree)
     if not transaksi_id:
         return
-        
-    conn = get_connection()
-    cursor = conn.cursor()
-    # Ambil info transaksi
-    cursor.execute("""SELECT nama_member, ongkos_kirim, total_harga, status, tanggal FROM transaksi_penjualan WHERE id_transaksi =?""", (transaksi_id,))
-    transaksi_info = cursor.fetchone()
-    # Ambil detail barang
-    cursor.execute("""SELECT nama_produk, jumlah, harga_satuan, diskon, subtotal, catatan FROM detail_penjualan WHERE transaksi_id = ?""", (transaksi_id,))
-    items = cursor.fetchall()
-    conn.close()
-
-    # Format data
-    pembeli = transaksi_info[0] or "Tanpa Member"
-    ongkir = transaksi_info[1] or 0
-    total = transaksi_info[2]
-    status = transaksi_info[3]
-    tanggal = transaksi_info[4]
-
-    item_dicts = [{"produk_nama": i[0], "jumlah": i[1], "harga_satuan":i[2], "diskon": i[3], "subtotal": i[4], "catatan": i[5]} for i in items]
-    nota_text = format_nota_thermal(transaksi_id, pembeli, item_dicts, total, status=status, ongkir=ongkir, tanggal=tanggal)
-        
+    
+    transaksi_info, item_dicts = get_detail_transaksi(transaksi_id)
+    if not transaksi_info:
+        return
+    
+    nota_text = format_nota_thermal(
+        transaksi_id, 
+        transaksi_info["pembeli"], 
+        item_dicts, 
+        transaksi_info["total"], 
+        status=transaksi_info["status"], 
+        ongkir=transaksi_info["ongkir"], 
+        tanggal=transaksi_info["tanggal"]
+    )
 
     popup = tk.Toplevel()
-    popup.title(f"Detail & Cetak Nota #{transaksi_id}")
+    popup.title(_("penjualan.detail_cetak_nota").format(id=transaksi_id),)
     popup.geometry("400x500")
 
     text_area = tk.Text(popup, wrap="word", font=("Courier New", 10))
@@ -448,18 +443,20 @@ def lihat_detail_transaksi_cetak(tree):
     text_area.config(state="disabled")
     text_area.pack(fill="both", expand=True, padx=10, pady=10)
 
-    btn_download = tk.Button(popup, text="Donwload Sebagai gambar", bg="blue", fg="white", command=lambda: simpan_nota_sebagai_gambar(nota_text, transaksi_id))
+    btn_download = tk.Button(popup, text=_("penjualan.btn_download"), bg="blue", 
+        fg="white", command=lambda: simpan_nota_sebagai_gambar(nota_text, transaksi_id)
+    )
     btn_download.pack(pady=5)
 
-    cetak_button = tk.Button(popup, text="Cetak ke Printer Thermal", font=("Arial", 10), bg="green", fg="white", padx=10, pady=5, command=lambda: cetak_nota_thermal(transaksi_id))
+    cetak_button = tk.Button(popup, text=_("penjualan.btn_cetak"), font=("Arial", 10), 
+        bg="green", fg="white", padx=10, pady=5, command=lambda: cetak_nota_thermal(transaksi_id)
+    )
     cetak_button.pack(pady=10)
-    
+
 def simpan_nota_sebagai_gambar(nota_text, transaksi_id):
-    # Siapkan font
     font_path = "C:/Windows/Fonts/consola.ttf"
     font = ImageFont.truetype(font_path, 14)
 
-    # Hitung ukuran gambar
     lines = nota_text.split("\n")
     max_width = max([font.getlength(line) for line in lines]) + 20
     line_height = font.getbbox("A")[3] + 6
@@ -477,68 +474,7 @@ def simpan_nota_sebagai_gambar(nota_text, transaksi_id):
     # Simpan
     filename = f"nota_{transaksi_id}.png"
     img.save(filename)
-    messagebox.showinfo("Berhasil", f"nota disimpan sebagai gambar: {filename}")
-
-
-# Ambil Data Transaksi dari Database
-def load_transaksi_rincian(tree_widget):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-                    SELECT id_transaksi, tanggal, total_harga 
-                    FROM transaksi_penjualan 
-                    ORDER BY id_transaksi DESC
-    """)
-    rows = cursor.fetchall()
-    conn.close()
-        
-    tree_widget.delete(*tree_widget.get_children())
-    for row in rows:
-        tree_widget.insert("", tk.END, values=(row[0], row[1], f"Rp {row[2]:,.0f}", ""))
-    tree_widget.update_idletasks()
-    print("[DEBUG] Jumlah transaksi dimuat:", len(rows))
-
-    
-def cek_nama_member(member_id):
-    if not isinstance(member_id, int):
-        return "[ID tidak valid]"
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT nama FROM member WHERE id_member = ?", (member_id,))
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result else "[Tidak ditemukan]"
-
-def handler_cek_nama_member(member_var, label_widget, daftar_member):
-    nama_input = member_var.get().strip()
-    member_id = next((m["id"] for m in daftar_member if m["nama"] == nama_input), None)
-
-    if member_id is None:
-        label_widget.config(text = "Nama member: [Tidak ditemukan]", fg= "red")
-    else:
-        label_widget.config(text=f"Nama Member: {nama_input}", fg="green")
-
-def hitung_total_transaksi(treeview, total_var, ongkir_entry=None):
-    total = 0
-    for child in treeview.get_children():
-        item = treeview.item(child)["values"]
-        if len(item) >= 4:
-            try:
-                subtotal = int(item[3])  # kolom ke-4 = subtotal
-                total += subtotal
-            except:
-                pass
-
-    # Tambahkan ongkir jika ada
-    if ongkir_entry:
-        try:
-            ongkir = float(ongkir_entry.get().strip())
-            total += ongkir
-        except:
-            pass
-
-    total_var.set(f"Total: Rp{total:,}")
-
+    messagebox.showinfo(_("penjualan.sukses"), _("penjualan.simpan_nota").format(file=filename))
 
 if __name__ == "__main__":
     buat_frame_penjualan()

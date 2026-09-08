@@ -42,9 +42,6 @@ def refresh_keranjang():
     global grand_total
     grand_total = total
 
-
-
-
 def main():
     global entry_kode_produk, entry_jumlah, tree_keranjang, label_total, keranjang, grand_total, combo_member, entry_voucher
     keranjang = []
@@ -55,14 +52,12 @@ def main():
     root.geometry("700x650")
 
     # Member
-
     tk.Label(root, text="Pilih Member (Opsional)").pack()
     member_list = [m["nama"] for m in semua_member()]
     combo_member = ttk.Combobox(root, values=member_list)
     combo_member.pack()
 
     # Produk
-
     tk.Label(root, text="Kode Produk").pack()
     entry_kode_produk = tk.Entry(root)
     entry_kode_produk.pack()
@@ -74,28 +69,21 @@ def main():
     tk.Button(root, text="Tambah ke Keranjang", command=tambah_ke_keranjang).pack(pady=5)
 
     # Keranjang
-
     tree_keranjang = ttk.Treeview(root, columns=("id", "nama", "jumlah", "harga", "subtotal"), show="headings")
     for col in ("id", "nama", "jumlah", "harga", "subtotal"):
         tree_keranjang.heading(col, text=col.capitalize())
     tree_keranjang.pack(pady=10)
 
     # Voucher
-
     tk.Label(root, text="Kode Voucher (jika ada)").pack()
     entry_voucher = tk.Entry(root)
     entry_voucher.pack()
 
     # Total & Simpan
-
     label_total = tk.Label(root, text="Total: Rp 0")
     label_total.pack(pady=5)
 
-
-
     root.mainloop()
-
-
 
 if __name__ == "__main__":
     main()

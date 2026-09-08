@@ -1,19 +1,27 @@
+# Third-party
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
-from app.core.stok_core import generate_kartu_stok, get_produk_id_by_nama, get_daftar_nama_barang, cek_log_harian, ambil_log_stok_bulanan, proses_stok_harian
+
+# Local Application
+from app.core.stok_core import (generate_kartu_stok, get_produk_id_by_nama, 
+                                get_daftar_nama_barang, cek_log_harian, 
+                                ambil_log_stok_bulanan, proses_stok_harian)
 from app.constants.config import get_connection
 from app.core.product_core import semua_produk
+from app.translator import _, i18n
 
 def build_treeview_stok(parent):
-    tree = ttk.Treeview(parent, columns=("Tanggal", "Awal", "Masuk", "Keluar", "Akhir"), show="headings")
+    tree = ttk.Treeview(parent, columns=(_("stok.tanggal"), _("stok.awal"), _("stok.masuk"), 
+                                         _("stok.keluar"), _("stok.akhir")), show="headings")
     for col in tree["columns"]:
         tree.heading(col, text=col)
         tree.column(col, anchor="center", width=80)
     return tree
 
 def build_treeview_ringkasan(parent):
-    tree = ttk.Treeview(parent, columns=("Kode", "Nama Produk", "Stok Awal", "Stok Akhir"), show="headings")
+    tree = ttk.Treeview(parent, columns=(_("stok.kode"), _("stok.nama_produk"), 
+                                         _("stok.stok_awal"), _("stok.stok_akhir")), show="headings")
     for col in tree["columns"]:
         tree.heading(col, text=col)
         tree.column(col, anchor="w", stretch=True)
@@ -22,8 +30,6 @@ def build_treeview_ringkasan(parent):
 def ambil_filter_stok(barang_combo, bulan_combo, tahun_combo):
     nama_barang = barang_combo.get()
     bulan_index = bulan_combo.current()
-    print("[DEBUG] Filter bulan:", bulan_combo.get())
-    print("[DEBUG] Filter tahun:", tahun_combo.get())
     tahun_str = tahun_combo.get()
     if not nama_barang or bulan_index == -1 or not tahun_str:
         return None
@@ -39,8 +45,6 @@ def ambil_filter_stok(barang_combo, bulan_combo, tahun_combo):
 def isi_treeview_stok(tree, kartu):
     tree.tag_configure("hari_ini", background="#dff0d8", foreground="black")
     tree.delete(*tree.get_children())
-    print("[DEBUG] Tipe Treeview:", type(tree))
-    print("[DEBUG] Tag hari_ini dikonfigurasi")
     for row in kartu:
         tanggal = row.get("tanggal")
         if row.get("hari_ini"):
@@ -60,9 +64,6 @@ def isi_treeview_stok(tree, kartu):
                 f"{row.get('keluar', 0):,}",
                 f"{row.get('akhir', 0):,}"
             ))
-        if row.get("hari_ini"):
-            print("[DEBUG] Baris hari ini:", row)
-
 
 def buat_frame_stok(parent, set_judul_modul):
     frame = tk.Frame(parent)
@@ -84,18 +85,20 @@ def build_section_kartu_stok(parent):
     filter_frame.pack(pady=10)
 
     daftar_nama_barang = get_daftar_nama_barang()
-    daftar_bulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
-    daftar_tahun = ["2025", "2026"] # bisa diganti dengan query log_stok
+    daftar_bulan = [_("stok.januari"), _("stok.februari"), _("stok.maret"), _("stok.april")
+                    , _("stok.mei"), _("stok.juni"), _("stok.juli"), _("stok.agustus")
+                    , _("stok.september"), _("stok.oktober"), _("stok.november"), _("stok.desember")]
+    daftar_tahun = ["2025", "2026", "2027", "2028"]
     
-    tk.Label(filter_frame, text="Barang:").grid(row=0, column=0)
+    tk.Label(filter_frame, text=_("stok.barang")).grid(row=0, column=0)
     barang_combo = ttk.Combobox(filter_frame, values=daftar_nama_barang)
     barang_combo.grid(row=0, column=1)
 
-    tk.Label(filter_frame, text="Bulan:").grid(row=0, column=2)
+    tk.Label(filter_frame, text=_("stok.bulan")).grid(row=0, column=2)
     bulan_combo = ttk.Combobox(filter_frame, values=daftar_bulan)
     bulan_combo.grid(row=0, column=3)
 
-    tk.Label(filter_frame, text="Tahun:").grid(row=0, column=4)
+    tk.Label(filter_frame, text=_("stok.tahun")).grid(row=0, column=4)
     tahun_combo = ttk.Combobox(filter_frame, values=daftar_tahun)
     tahun_combo.grid(row=0, column=5)
 
@@ -117,16 +120,16 @@ def build_section_kartu_stok(parent):
         kartu = generate_kartu_stok(produk_id, bulan, tahun)
         isi_treeview_stok(stok_tree, kartu)
                              
-    tk.Button(filter_frame, text="Tampilkan", command=tampilkan_kartu_stok).grid(row=0, column=6, padx=10)
+    tk.Button(filter_frame, text=_("stok.btn_tampilkan"), command=tampilkan_kartu_stok).grid(row=0, column=6, padx=10)
 
 def build_section_ringkasan_stok(parent):
     tab_ringkasan = ttk.Frame(parent)
-    parent.add(tab_ringkasan, text="Ringkasan")
+    parent.add(tab_ringkasan, text=_("stok.tab_ringkasan"))
 
     frame_ringkasan = tk.Frame(tab_ringkasan)
     frame_ringkasan.pack(pady=10)
 
-    tk.Label(frame_ringkasan, text="Tanggal:").grid(row=0, column=0)
+    tk.Label(frame_ringkasan, text=_("stok.tanggal_frame")).grid(row=0, column=0)
     tanggal_entry = tk.Entry(frame_ringkasan)
     tanggal_entry.insert(0, datetime.now().strftime("%Y-%m-%d"))
     tanggal_entry.grid(row=0, column=1)
@@ -142,7 +145,7 @@ def build_section_ringkasan_stok(parent):
     def tampilkan_log_harian(treeview, tanggal):
         selected = treeview.focus()
         if not selected:
-            messagebox.showinfo("Info", "Pilih produk terlebih dahulu.")
+            messagebox.showinfo(_("stok.box_info"), _("stok.pilih_produk"))
             return
         values = treeview.item(selected)["values"]
         produk_id = values[0]
@@ -153,14 +156,13 @@ def build_section_ringkasan_stok(parent):
         conn.close()
 
         if not logs:
-            messagebox.showinfo("Info", "Tidak ada log stok untuk tanggal tersebut.")
+            messagebox.showinfo(_("stok.box_info"), (_("stok.tidak_ada_log")))
             return
     
-        # Tampilkan di popup
-
         window = tk.Toplevel(treeview)
         window.title(f"Log Stok Produk #{produk_id} - {tanggal}")
-        tree_log = ttk.Treeview(window, columns=("Waktu", "Awal", "Akhir", "Jenis"), show="headings")
+        tree_log = ttk.Treeview(window, columns=(_("stok.waktu"), _("stok.awal")
+                                                 , _("stok.akhir"), _("stok.jenis")), show="headings")
         for col in tree_log["columns"]:
             tree_log.heading(col, text=col)
             tree_log.column(col, anchor="center", width=100)
@@ -169,11 +171,12 @@ def build_section_ringkasan_stok(parent):
         for row in logs:
             tree_log.insert("", "end", values=row)
     
-    
-    tk.Button(frame_ringkasan, text="Tampilkan Stok Hari Ini", command=tampilkan_ringkasan).grid(row=0, column=2, padx=10)
-    tk.Button(frame_ringkasan, text="Audit Log Hari ini", command=lambda: tampilkan_log_harian(tree_ringkasan, tanggal_entry.get().strip())).grid(row=0, column=3, padx=10)
+    tk.Button(frame_ringkasan, text=_("stok.btn_tampilkan_ringkasan")
+              , command=tampilkan_ringkasan).grid(row=0, column=2, padx=10)
+    tk.Button(frame_ringkasan, text=_("stok.btn_log_harian")
+              , command=lambda: tampilkan_log_harian(tree_ringkasan, tanggal_entry.get()
+                                                     .strip())).grid(row=0, column=3, padx=10)
 
-# 
 def tampilkan_stok_harian(treeview, bulan, tahun):
     conn = get_connection()
     cursor = conn.cursor()
