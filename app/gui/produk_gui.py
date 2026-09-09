@@ -10,6 +10,11 @@ from app.core.product_core import (tambah_produk, semua_produk,  update_produk, 
 from app.translator import _, i18n
 
 def buka_form_tambah_produk(parent):
+    """Open the modal dialog form to create a new product entry.
+
+    Args:
+        parent (tk.Tk): Parent Tkinter window container.
+    """
     global entry_nama, entry_kode, entry_kategori, entry_merk
     global entry_harga_beli, entry_harga_jual, entry_stok, entry_berat
     
@@ -19,6 +24,14 @@ def buka_form_tambah_produk(parent):
     center_window(form_produk)
 
 def build_form_produk_window(parent):
+    """Initialize and configure the TopLevel window for adding products.
+
+    Args:
+        parent (tk.Tk): Parent window element.
+
+    Returns:
+        tk.Toplevel: Configured modal dialog window for product input.
+    """
     form = tk.Toplevel(parent)
     form.title(_("produk.form_title"))
     form.geometry("500x400")
@@ -28,6 +41,11 @@ def build_form_produk_window(parent):
     return form
 
 def build_form_produk_fields(form):
+    """Construct and layout all form input fields and labels in product window.
+
+    Args:
+        form (tk.Toplevel): Modal window where input fields are rendered.
+    """
     global entry_nama, entry_kode, entry_kategori, entry_merk
     global entry_harga_beli, entry_harga_jual, entry_stok, entry_berat, entries
 
@@ -53,6 +71,11 @@ def build_form_produk_fields(form):
     tk.Button(form, text=_("produk.tambah_kategori"), command=lambda: build_form_tambah_kategori(form)).grid(row=2, column=2, padx=(0, 10), pady=5)
 
 def build_form_produk_buttons(form):
+    """Attach submission action buttons and handle validation logic for product insertion.
+
+    Args:
+        form (tk.Toplevel): Target window container for action controls.
+    """
     def tambah_produk_gui():
         
         global form_produk_aktif
@@ -96,7 +119,12 @@ def build_form_produk_buttons(form):
 
     tk.Button(form, text=_("produk.simpan_produk"), command=tambah_produk_gui).grid(row=len(entries), column=0, columnspan=2, pady=20, padx=30)
 
-def center_window(form):    # Untuk menengahkan jendela saat input produk
+def center_window(form):
+    """Center the window relative to the user screen dimensions.
+
+    Args:
+        form (tk.Toplevel): Window instance to align to screen center.
+    """
     form.update_idletasks()
     w = form.winfo_width()
     h = form.winfo_height()
@@ -105,6 +133,11 @@ def center_window(form):    # Untuk menengahkan jendela saat input produk
     form.geometry(f"+{x}+{y}")
 
 def buka_form_edit_produk(parent):
+    """Retrieve selected product from Treeview and open edit modal form.
+
+    Args:
+        parent (tk.Tk): Parent Tkinter application window.
+    """
     global entry_nama, entry_kode, entry_kategori, entry_merk, entry_harga_beli, entry_harga_jual, entry_stok, entry_berat, selected_id
     selected_item = tree.selection()
     if not selected_item:
@@ -136,6 +169,16 @@ def buka_form_edit_produk(parent):
     tk.Button(form_edit, text=_("produk.btn_simpan"), command=lambda: simpan_perubahan_produk(form_edit, selected_id, entries)).grid(row=len(entries), column=0, columnspan=2, pady=20, padx=30)
 
 def build_edit_form_fields(form, produk):
+    """Construct input widgets populated with existing product values for editing.
+
+    Args:
+        form (tk.Toplevel): Target modal window.
+        produk (Dict[str, Any]): Product details entity map.
+
+    Returns:
+        List[Union[tk.Entry, ttk.Combobox]]: Collection of populated input
+        controls.
+    """
     labels = [_("produk.nama"), _("produk.kode"), _("produk.kategori"), _("produk.merk"), _("produk.harga_beli"), _("produk.harga_jual"),_("produk.stok"), _("produk.berat")]
     keys = ["nama_produk", "kode_produk", "kategori_nama", "merk", "harga_beli", "harga_jual", "stok", "berat"]
     entries = []
@@ -159,6 +202,14 @@ def build_edit_form_fields(form, produk):
     return entries
 
 def simpan_perubahan_produk(form, id_produk, entries):
+    """Validate inputs and update existing product record in database.
+
+    Args:
+        form (tk.Toplevel): Product editing modal form.
+        id_produk (Any): Unique record primary key identifier.
+        entries_list (List[Union[tk.Entry, ttk.Combobox]]): Form controls containing
+            updated values.
+    """
     import traceback
     traceback.print_stack()
     labels = [_("produk.nama"), _("produk.kode"), _("produk.kategori"), _("produk.merk"), _("produk.harga_beli"), _("produk.harga_jual"),_("produk.stok"), _("produk.berat")]
@@ -200,6 +251,17 @@ def simpan_perubahan_produk(form, id_produk, entries):
         messagebox.showerror(_("produk.gagal"), _("produk.gagal_tambah"))
 
 def update_produk_by_id(id_produk, data):
+    """Validate field data types and execute product update in the database.
+
+    Args:
+        id_produk (Any): Database record primary key identifier.
+        data (Dict[str, Any]): Dictionary containing product field names and
+            values.
+
+    Returns:
+        bool: True if the database record was successfully updated, False
+        otherwise.
+    """
     try:
         for key in ["harga_beli", "harga_jual", "stok", "berat"]:
             if not isinstance(data[key], (int, float)):
@@ -222,6 +284,7 @@ def update_produk_by_id(id_produk, data):
         return False
 
 def hapus_produk_gui():
+    """Handle UI confirmation and deletion logic for selected product in Treeview."""
     selected_item = tree.selection()
 
     if not selected_item:
@@ -242,6 +305,14 @@ def hapus_produk_gui():
             messagebox.showerror(_("produk.gagal_hapus"), str(e))
 
 def format_rupiah(nilai):
+    """Format a numerical value or string into IDR currency representation.
+
+    Args:
+        nilai (Union[int, float, str]): Numeric value or numeric string to format.
+
+    Returns:
+        str: Formatted currency string (e.g., 'Rp 10,000') or 'Rp 0' on failure.
+    """
     try:
         return f"Rp {int(float(nilai)):,}"
     except (ValueError, TypeError):
@@ -249,6 +320,13 @@ def format_rupiah(nilai):
 
 # Main GUI
 def buat_frame_produk(parent, set_judul_modul):
+    """Construct main UI layout frame and controls for product management module.
+
+    Args:
+        parent (tk.Tk): Parent Tkinter container.
+        set_judul_modul (Callable[[str], None]): Callback function to update
+            header/title bar text.
+    """
     global entry_nama, entry_kode, entry_kategori, entry_merk
     global entry_harga_beli, entry_harga_jual, entry_stok, entry_berat
     global tree, selected_id, entry_filter_kategori
@@ -267,6 +345,11 @@ def buat_frame_produk(parent, set_judul_modul):
     set_judul_modul(_("produk.set_judul_modul"))
 
 def build_kontrol_produk(frame):
+    """Create top control bar containing search inputs and action buttons.
+
+    Args:
+        frame (tk.Frame): Parent container widget.
+    """
     global entry_cari
 
     frame_kontrol = tk.Frame(frame, bg="#f4f4f4")
@@ -289,6 +372,7 @@ def build_kontrol_produk(frame):
     tk.Button(frame_kontrol_grid, text="Reset Filter", command=reset_filter).grid(row=0, column=5, padx=5)
 
 def import_produk_excel():
+    """Parse product records from an Excel or CSV file and save into database."""
     file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.csv")])
     if not file_path:
         return
@@ -332,6 +416,22 @@ def import_produk_excel():
         messagebox.showerror("Failed to Import", str(e))
 
 def tambah_produk_excel(nama, kode, kategori_nama, merk, harga_beli, harga_jual, stok, berat):
+    """Construct product record payload from Excel parameters.
+
+    Args:
+        nama (str): Product name.
+        kode (str): Unique SKU or product code.
+        kategori_nama (str): Associated product category name.
+        merk (str): Product brand.
+        harga_beli (Union[int, float, str]): Purchase price.
+        harga_jual (Union[int, float, str]): Retail selling price.
+        stok (Union[int, str]): Inventory stock quantity.
+        berat (Union[float, str]): Item weight in kilograms.
+
+    Raises:
+        ValueError: Raised when the provided category name cannot be found in the
+        database.
+    """
     kategori_id = get_kategori_id_by_nama(kategori_nama)
     if kategori_id is None:
         raise ValueError(_("produk.err_kategori_tidak_ditemukan").format(nama=kategori_id),)
@@ -348,6 +448,11 @@ def tambah_produk_excel(nama, kode, kategori_nama, merk, harga_beli, harga_jual,
     }
 
 def build_form_produk(frame):
+    """Construct hidden input fields container for product entries.
+
+    Args:
+        frame (tk.Frame): Parent layout container widget.
+    """
     global entry_nama, entry_kode, entry_kategori, entry_merk
     global entry_harga_beli, entry_harga_jual, entry_stok, entry_berat, entries
 
@@ -373,6 +478,11 @@ def build_form_produk(frame):
                entry_harga_beli, entry_harga_jual, entry_stok, entry_berat]
 
 def build_filter_produk(frame):
+    """Render category dropdown filter controls.
+
+    Args:
+        frame (tk.Frame): Parent layout container widget.
+    """
     global entry_filter_kategori
 
     frame_filter = tk.Frame(frame, bg="#f4f4f4")
@@ -388,6 +498,11 @@ def build_filter_produk(frame):
     tk.Button(frame_filter, text=_("produk.frame_filter"), command=filter_produk_gui).grid(row=0, column=4, padx=5)
 
 def build_treeview_produk(frame):
+    """Construct the Treeview table widget and scrollbars for product listings.
+
+    Args:
+        frame (tk.Frame): Parent Tkinter container.
+    """
     global tree
 
     columns = ("id", "nama", "kode", "kategori", "merk", "harga_beli", "harga_jual", "stok", "berat")
@@ -431,6 +546,13 @@ def build_treeview_produk(frame):
     tree_container.grid_columnconfigure(0, weight=1)
 
 def refresh_tree(kategori=None, nama_produk=None):
+    """Fetch all products from database and refresh Treeview table items.
+
+    Args:
+        kategori (Optional[str]): Category filter string. Defaults to None.
+        nama_produk (Optional[str]): Product name search keyword. Defaults to
+            None.
+    """
     tree.delete(*tree.get_children())
 
     for p in semua_produk():
@@ -442,11 +564,17 @@ def refresh_tree(kategori=None, nama_produk=None):
         tree.insert("", tk.END, values=(p["id_produk"], p.get("nama_produk",""), p.get("kode_produk",""), p.get("nama_kategori",""), p.get("merk",""), format_rupiah(p.get("harga_beli",0)), format_rupiah(p.get("harga_jual",0)), p.get("stok",0), p.get("berat",0)))
 
 def filter_produk_gui():
+    """Retrieve GUI filter inputs and trigger Treeview refresh."""
     kategori = entry_filter_kategori.get().strip().lower()
     keyword = entry_cari.get().strip().lower()
     refresh_tree(kategori=kategori, nama_produk=keyword)
 
 def filter_produk_by_kategori(nama_kategori):
+    """Filter Treeview rows explicitly by category name.
+
+    Args:
+        nama_kategori (str): Target product category name or 'Semua' for all.
+    """
     tree.delete(*tree.get_children())
 
     if nama_kategori == "Semua":
@@ -458,16 +586,23 @@ def filter_produk_by_kategori(nama_kategori):
         tree.insert("", tk.END, values=(p["id_produk"], p.get("nama_produk", ""), p.get("kode_produk", ""), nama_kategori, p.get("merk", ""), format_rupiah(p.get("harga_beli", 0)), format_rupiah(p.get("harga_jual", 0)), p.get("stok", 0), p.get("berat",0)))
 
 def cari_produk_nama():
+    """Retrieve search input entry and trigger product search in Treeview."""
     keyword = entry_cari.get()
     refresh_tree(nama_produk=keyword)
 
 def reset_filter():
+    """Clear all filter and search entry controls and display all products."""
     entry_filter_kategori.set("")
     entry_filter_kategori.delete(0, tk.END)
     entry_cari.delete(0, tk.END)
     refresh_tree()
     
 def on_tree_select(event):
+    """Handle row selection event from Treeview and populate form inputs.
+
+    Args:
+        event (tk.Event): Tkinter event payload triggered by Treeview selection.
+    """
     global selected_id
 
     if not buka_form_tambah_produk or not isinstance(buka_form_tambah_produk, tk.Toplevel):
@@ -496,6 +631,11 @@ def on_tree_select(event):
 form_produk_aktif = False
 
 def build_form_tambah_kategori(parent):
+    """Launch a pop-up Toplevel dialog for creating new product categories.
+
+    Args:
+        parent (tk.Tk): Parent Tkinter window container.
+    """
     form_kategori = tk.Toplevel(parent)
     form_kategori.title(_("produk.tambah_kategori"))
     form_kategori.geometry("300x150")
@@ -505,6 +645,7 @@ def build_form_tambah_kategori(parent):
     entry_nama_kategori.pack(pady=5)
 
     def simpan_kategori():
+        """Save category entry to database and update category combobox."""
         nama = entry_nama_kategori.get().strip()
         if not nama:
             messagebox.showerror("Error", _("produk.msg_err_nama_kategori"))
@@ -524,6 +665,11 @@ def build_form_tambah_kategori(parent):
     tk.Button(form_kategori, text=_("produk.simpan"), command=simpan_kategori).pack(pady=10)
 
 def build_footer_produk(frame):
+    """Create footer controls containing edit and delete product buttons.
+
+    Args:
+        frame (tk.Frame): Parent layout container widget.
+    """
     tk.Button(frame, text=_("produk.edit_produk"), command=lambda: buka_form_edit_produk(frame)).pack(pady=2)
     tk.Button(frame, text=_("produk.hapus_produk"), command=hapus_produk_gui).pack(pady=2)
 

@@ -14,6 +14,12 @@ from app.constants.config import get_connection
 from app.translator import _, i18n
 
 def open_calendar(entry_widget):
+    """Open a modal date picker window and populate the target Entry widget.
+
+    Args:
+        entry_widget (ttk.Entry): Target entry widget where selected date string is
+            inserted.
+    """
     top = Toplevel()
     top.grab_set()
     top.transient(entry_widget.master)
@@ -22,12 +28,19 @@ def open_calendar(entry_widget):
     cal.pack(padx=10, pady=10)
 
     def select_date():
+        """Extract chosen date from Calendar and update entry field."""
         entry_widget.delete(0, 'end')
         entry_widget.insert(0, cal.get_date())
         top.destroy()
     Button(top, text=_("pengeluaran.btn_top"), command=select_date).pack(pady=5)
 
 def buka_form_tambah_pengeluaran(tampilkan_histori_callback):
+    """Display a modal dialog window to input and record new expense transactions.
+
+    Args:
+        tampilkan_histori_callback (Callable[[List[Dict[str, Any]]], None]):
+            Callback function used to reload the history treeview upon saving.
+    """
     form = tk.Toplevel()
     form.title(_("pengeluaran.form_title"))
     form.geometry("400x400")
@@ -58,6 +71,7 @@ def buka_form_tambah_pengeluaran(tampilkan_histori_callback):
         entries[field["key"]] = ent  # saving according key statis: 'nama', 'nominal', dll.
     
     def simpan():
+        """Validate user input, construct record payload, and persist expense data."""
         try:
             # Take data using statis
             tanggal = entries["tanggal"].get().strip()
@@ -91,6 +105,12 @@ def buka_form_tambah_pengeluaran(tampilkan_histori_callback):
     ttk.Button(form, text=_("pengeluaran.simpan"), command=simpan).pack(pady=20)
 
 def tampilkan_histori(data_pengeluaran):
+    """Clear existing tree rows and render the updated set of expense records.
+
+    Args:
+        data_pengeluaran (List[Dict[str, Any]]): List of dictionary objects
+            representing expense transactions.
+    """
     tree.delete(*tree.get_children()) # clear semua isi lama
     for row in data_pengeluaran:
         tree.insert("", "end", values=(
@@ -102,6 +122,13 @@ def tampilkan_histori(data_pengeluaran):
         ), tags=(row["id_pengeluaran"],)) # row[0] = id_pengeluaran 
 
 def buat_frame_pengeluaran(parent, set_judul_modul):
+    """Construct and initialize the primary UI layout for the expense module.
+
+    Args:
+        parent (tk.Widget): Parent container widget.
+        set_judul_modul (Callable[[str], None]): Callback function to update main
+            application header title.
+    """
     global tree
     frame = tk.Frame(parent, bg="#f4f4f4")
     
@@ -139,12 +166,14 @@ def buat_frame_pengeluaran(parent, set_judul_modul):
     combo_tahun.set(str(datetime.now().year))
     
     def reset_filter():
+        """Clear active search parameters and restore default historical view."""
         combo_bulan.set("")
         combo_kategori.set(_("pengeluaran.semua"))
         tampilkan_histori(semua_pengeluaran())
         messagebox.showinfo("Reset",_("pengeluaran.msg_show_info_filter"))
 
     def apply_filter():
+        """Fetch and render filtered records based on current user inputs."""
         bulan_str = combo_bulan.get()
         kategori = combo_kategori.get()
         tahun_str = combo_tahun.get()
@@ -195,6 +224,7 @@ def buat_frame_pengeluaran(parent, set_judul_modul):
     frame_btn.pack(pady=5)
 
     def hapus_pengeluaran_gui():
+        """Prompt for user confirmation and remove selected expense record from DB."""
         selected = tree.selection()
         if not selected:
             messagebox.showwarning(_("pengeluaran.msg_show_warning"))
@@ -206,6 +236,7 @@ def buat_frame_pengeluaran(parent, set_judul_modul):
             apply_filter()
 
     def edit_pengeluaran_gui():
+        """Launch modal form initialized with values of selected entry for modification."""
         selected = tree.selection()
         if not selected:
             messagebox.showwarning(_("pengeluaran.msg_pilih_data"))
@@ -243,6 +274,7 @@ def buat_frame_pengeluaran(parent, set_judul_modul):
         entries["Keterangan"].insert(0, values[4])
 
         def simpan_edit():
+            """Extract edited details and update record via database persistence function."""
             try:
                 tanggal = entries["Tanggal"].get()
                 nama = entries["Nama Pengeluaran"].get()

@@ -12,6 +12,14 @@ from app.core.product_core import semua_produk
 from app.translator import _, i18n
 
 def build_treeview_stok(parent):
+    """Construct and format the stock card Treeview component.
+
+    Args:
+        parent (tk.Widget): Parent GUI container widget.
+
+    Returns:
+        ttk.Treeview: Configured Treeview widget for stock movement display.
+    """
     tree = ttk.Treeview(parent, columns=(_("stok.tanggal"), _("stok.awal"), _("stok.masuk"), 
                                          _("stok.keluar"), _("stok.akhir")), show="headings")
     for col in tree["columns"]:
@@ -20,6 +28,14 @@ def build_treeview_stok(parent):
     return tree
 
 def build_treeview_ringkasan(parent):
+    """Construct and format the stock summary Treeview component.
+
+    Args:
+        parent (tk.Widget): Parent GUI container widget.
+
+    Returns:
+        ttk.Treeview: Configured Treeview widget for stock summary display.
+    """
     tree = ttk.Treeview(parent, columns=(_("stok.kode"), _("stok.nama_produk"), 
                                          _("stok.stok_awal"), _("stok.stok_akhir")), show="headings")
     for col in tree["columns"]:
@@ -28,6 +44,17 @@ def build_treeview_ringkasan(parent):
     return tree
 
 def ambil_filter_stok(barang_combo, bulan_combo, tahun_combo):
+    """Extract and validate parameters from stock filter dropdowns.
+
+    Args:
+        barang_combo (ttk.Combobox): Product selector Combobox.
+        bulan_combo (ttk.Combobox): Month selector Combobox.
+        tahun_combo (ttk.Combobox): Year selector Combobox.
+
+    Returns:
+        Optional[Tuple[Any, int, int]]: Tuple containing (product_id, month,
+        year) if valid, otherwise None.
+    """
     nama_barang = barang_combo.get()
     bulan_index = bulan_combo.current()
     tahun_str = tahun_combo.get()
@@ -43,6 +70,12 @@ def ambil_filter_stok(barang_combo, bulan_combo, tahun_combo):
     return produk_id, bulan, tahun
 
 def isi_treeview_stok(tree, kartu):
+    """Populate stock card Treeview rows with formatted stock transaction records.
+
+    Args:
+        tree (ttk.Treeview): Target Treeview instance.
+        kartu (List[Dict[str, Any]]): List of stock movement record dictionaries.
+    """
     tree.tag_configure("hari_ini", background="#dff0d8", foreground="black")
     tree.delete(*tree.get_children())
     for row in kartu:
@@ -66,6 +99,13 @@ def isi_treeview_stok(tree, kartu):
             ))
 
 def buat_frame_stok(parent, set_judul_modul):
+    """Build primary stock management view inside a Notebook container.
+
+    Args:
+        parent (tk.Tk): Parent Tkinter container.
+        set_judul_modul (Callable[[str], None]): Callback function to set module
+            title.
+    """
     frame = tk.Frame(parent)
     frame.pack(fill="both", expand=True)
 
@@ -78,6 +118,11 @@ def buat_frame_stok(parent, set_judul_modul):
     set_judul_modul("Stok")
 
 def build_section_kartu_stok(parent):
+    """Build the stock card view section within the provided notebook tab.
+
+    Args:
+        parent (ttk.Notebook): Parent Notebook container.
+    """
     tab_stok = ttk.Frame(parent)
     parent.add(tab_stok, text="Stok")
 
@@ -113,6 +158,7 @@ def build_section_kartu_stok(parent):
     stok_tree.config(yscrollcommand=scrollbar.set)
 
     def tampilkan_kartu_stok():
+        """Fetch filter inputs and load generated stock card into Treeview."""
         hasil = ambil_filter_stok(barang_combo, bulan_combo, tahun_combo)
         if not hasil:
             return
@@ -123,6 +169,11 @@ def build_section_kartu_stok(parent):
     tk.Button(filter_frame, text=_("stok.btn_tampilkan"), command=tampilkan_kartu_stok).grid(row=0, column=6, padx=10)
 
 def build_section_ringkasan_stok(parent):
+    """Build stock summary section within notebook container.
+
+    Args:
+        parent (ttk.Notebook): Parent Notebook container.
+    """
     tab_ringkasan = ttk.Frame(parent)
     parent.add(tab_ringkasan, text=_("stok.tab_ringkasan"))
 
@@ -138,11 +189,18 @@ def build_section_ringkasan_stok(parent):
     tree_ringkasan.pack(fill="both", expand=True)
 
     def tampilkan_ringkasan():
+        """Trigger daily stock update visualization for current month/year."""
         bulan = datetime.now().month
         tahun = datetime.now().year
         tampilkan_stok_harian(tree_ringkasan, bulan, tahun)
 
     def tampilkan_log_harian(treeview, tanggal):
+        """Open modal window displaying detailed daily stock transaction logs.
+
+        Args:
+            treeview (ttk.Treeview): Source Treeview table.
+            tanggal (str): Date string filter formatted as 'YYYY-MM-DD'.
+        """
         selected = treeview.focus()
         if not selected:
             messagebox.showinfo(_("stok.box_info"), _("stok.pilih_produk"))
@@ -178,6 +236,13 @@ def build_section_ringkasan_stok(parent):
                                                      .strip())).grid(row=0, column=3, padx=10)
 
 def tampilkan_stok_harian(treeview, bulan, tahun):
+    """Fetch monthly stock logs from database and insert aggregated daily stock summary.
+
+    Args:
+        treeview (ttk.Treeview): Target Treeview instance.
+        bulan (int): Target month index (1-12).
+        tahun (int): Target year.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     produk_list = semua_produk()

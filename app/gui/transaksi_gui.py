@@ -1,15 +1,16 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
-
-# Import Modular Core
+import tkinter as tk
 
 from app.core.product_core import get_produk
 from app.core.member_core import semua_member
 
-# Untuk embedded ke GUI
 
-import tkinter as tk
+
+"""
+Deprecated. This file is no longer use.
+"""
 
 def tambah_ke_keranjang():
     kode = entry_kode_produk.get()

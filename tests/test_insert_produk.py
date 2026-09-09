@@ -1,5 +1,7 @@
 from app.core.product_core import tambah_produk
-
+"""
+Deprecated. Only for testing.
+"""
 tambah_produk(
     nama="SUSU",
     kode="SS88",

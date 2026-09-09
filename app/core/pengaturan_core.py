@@ -22,11 +22,23 @@ NOTA_CONFIG_PATH = os.path.join(CONFIG_DIR, "nota_config.json")
 PRINTER_CONFIG_PATH = os.path.join(CONFIG_DIR,"printer_config.json")
 
 def simpan_format_nota(data):
+    """Saves thermal receipt layout configurations to a JSON file.
+
+    Args:
+        data (Dict[str, Any]): Receipt configuration options (e.g., header,
+            footer, font size).
+    """
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(NOTA_CONFIG_PATH, "w")  as f:
         json.dump(data, f, indent=4)
 
 def ambil_format_nota():
+    """Retrieves thermal receipt format configurations or returns default settings.
+
+    Returns:
+        Dict[str, Any]: Dictionary containing header, footer, font size, margins,
+        and paper width.
+    """
     if not os.path.exists(NOTA_CONFIG_PATH):
         return{
             "header": "Toko POS Pintar",
@@ -40,6 +52,11 @@ def ambil_format_nota():
         return json.load(f)
 
 def get_usb_printer_list():
+    """Detects and returns a list of connected USB printer vendor and product IDs.
+
+    Returns:
+        List[str]: Formatted string list of USB devices ('vendor_id:product_id').
+    """
     try:
         backend = usb.backend.libusb1.get_backend()
         devices = usb.core.find(find_all=True, backend=backend)
@@ -56,6 +73,12 @@ def get_usb_printer_list():
         return []
 
 def simpan_printer_default(vendor_id, product_id):
+    """Saves default USB printer vendor and product IDs to configuration file.
+
+    Args:
+        vendor_id (str): Hexadecimal string representing vendor ID.
+        product_id (str): Hexadecimal string representing product ID.
+    """
     config_dir = os.path.join(os.getcwd(), "config")
     os.makedirs(config_dir, exist_ok=True)
     config_path = os.path.join(config_dir, "printer_config.json")
@@ -68,6 +91,16 @@ def simpan_printer_default(vendor_id, product_id):
         print("[ERROR] Gagal menyimpan printer default:", e)
 
 def test_cetak_usb(vendor_id, product_id, text="Tes cetak berhasil."):
+    """Sends a test text print job to the specified USB thermal printer.
+
+    Args:
+        vendor_id (int): Vendor ID integer.
+        product_id (int): Product ID integer.
+        text (str): Sample text to print. Defaults to "Tes cetak berhasil.".
+
+    Returns:
+        bool: True if test printing succeeded, False otherwise.
+    """
     try:
         printer = Usb(vendor_id, product_id, close_port_after_job=True)
         printer.open()
@@ -84,6 +117,15 @@ def test_cetak_usb(vendor_id, product_id, text="Tes cetak berhasil."):
 LEBAR_BARIS = 42
 
 def format_tanggal_indonesia(dt):
+    """Formats a datetime object or date string into Indonesian date format.
+
+    Args:
+        dt (Union[datetime, str]): Datetime instance or date string in 'YYYY-MM-DD
+            HH:MM:SS'.
+
+    Returns:
+        str: Formatted date string (e.g., '09 September 2026').
+    """
     bulan_map = {
         "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
         "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
@@ -96,6 +138,18 @@ def format_tanggal_indonesia(dt):
     return f"{hari} {bulan} {tahun}"
 
 def format_item_thermal(nama, harga, qty, subtotal, max_width=LEBAR_BARIS):
+    """Formats a single line item for thermal printing layout.
+
+    Args:
+        nama (str): Product name.
+        harga (float): Item unit price.
+        qty (int): Quantity purchased.
+        subtotal (float): Total price for this item line.
+        max_width (int): Character width limit per row. Defaults to LEBAR_BARIS.
+
+    Returns:
+        str: Multi-line formatted item string for printing.
+    """
     lines = []
     nama = nama[:30] if len(nama) > 30 else nama
     lines.append(f"{nama:<30}{subtotal:>12,.0f}")
@@ -103,6 +157,22 @@ def format_item_thermal(nama, harga, qty, subtotal, max_width=LEBAR_BARIS):
     return "\n".join(lines)                                   
 
 def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ongkir=0, tanggal = None):
+    """Generates complete formatted thermal receipt plain-text string.
+
+    Args:
+        transaksi_id (Union[int, str]): Unique transaction identifier.
+        pembeli (str): Buyer or member name.
+        items (List[Dict[str, Any]]): List of item dictionaries containing product
+            details.
+        total (float): Final grand total transaction price.
+        status (str): Receipt state status. Defaults to "DRAFT".
+        ongkir (float): Shipping fee amount. Defaults to 0.0.
+        tanggal (Optional[Union[datetime, str]]): Transaction timestamp. Defaults
+            to current datetime.
+
+    Returns:
+        str: Monospaced structured receipt payload ready for printer.
+    """
     from app.core.pengaturan_core import ambil_format_nota
     config = ambil_format_nota()
     tanggal_str = format_tanggal_indonesia(tanggal or datetime.now())
@@ -143,11 +213,15 @@ def format_nota_thermal(transaksi_id, pembeli, items, total, status="DRAFT", ong
     return "\n".join(lines)
 
 def cetak_nota_thermal(transaksi_id):
+    """Fetches transaction data and prints thermal receipt or writes fallback log upon error.
+
+    Args:
+        transaksi_id (Union[int, str]): Primary key ID of the sale transaction.
+    """
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()    
     try:
-        # Ambil transaksi utama
         cursor.execute("""
             SELECT tanggal, nama_member, total_harga, ongkos_kirim
             FROM transaksi_penjualan
@@ -163,16 +237,15 @@ def cetak_nota_thermal(transaksi_id):
         total = transaksi["total_harga"]
         ongkir = transaksi["ongkos_kirim"]
 
-        # Ambil Detail barang
         cursor.execute("""
             SELECT nama_produk AS produk_nama, jumlah, harga_satuan, subtotal 
             FROM detail_penjualan
             WHERE transaksi_id = ?
         """, (transaksi_id,))
         items = [dict(row) for row in cursor.fetchall()]
-        # Format nota pakai yang sudah ada
+
         nota_str = format_nota_thermal(transaksi_id, pembeli, items, total, ongkir=ongkir, tanggal=tanggal)
-        # Kirim ke printer thermal
+
         try:
             printer_info = ambil_printer_default()
             vendor_id = int(printer_info["vendor_id"], 16)
@@ -188,7 +261,7 @@ def cetak_nota_thermal(transaksi_id):
             print("[INFO] Nota berhasil dicetak ke printer thermal.")
         except Exception as e:
             log_cetak_gagal(transaksi_id, str(e))
-            # Fallback ke file
+
             fallback_path = os.path.join("debug", f"nota_fallback_{transaksi_id}.txt")
             os.makedirs("debug", exist_ok=True)
             with open(fallback_path, "w", encoding="utf-8") as f:
@@ -199,11 +272,13 @@ def cetak_nota_thermal(transaksi_id):
          conn.close()
 
 def simulasi_cetak_nota(transaksi_id):
+    """
+    Deprecated. This function only for testing.
+    """
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     try: 
-        # Ambil transaksi utama
         cursor.execute("""
             SELECT tanggal, nama_member, total_harga, ongkos_kirim
             FROM transaksi_penjualan
@@ -219,14 +294,12 @@ def simulasi_cetak_nota(transaksi_id):
         total = transaksi["total_harga"]
         ongkir = transaksi["ongkos_kirim"]
 
-        # Ambil Detail barang
         cursor.execute("""
             SELECT nama_produk AS produk_nama, jumlah, harga_satuan, subtotal 
             FROM detail_penjualan
             WHERE transaksi_id = ?
         """, (transaksi_id,))
         items = [dict(row) for row in cursor.fetchall()]
-        # Format nota pakai yang sudah ada
         nota_str = format_nota_thermal(
             transaksi_id, 
             transaksi["nama_member"] or "-", 
@@ -235,7 +308,6 @@ def simulasi_cetak_nota(transaksi_id):
             ongkir=transaksi["ongkos_kirim"], 
             tanggal=transaksi["tanggal"]
             )
-        # Simpan ke file .txt
 
         os.makedirs("debug", exist_ok=True)
         path = os.path.join("debug", f"nota_simulasi{transaksi_id}.txt")

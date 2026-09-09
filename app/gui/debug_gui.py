@@ -9,6 +9,20 @@ from app.core.pengaturan_core import simulasi_cetak_nota
 from app.translator import _
 
 def buka_debug_gui(parent, set_judul_modul):
+    """Build and display the debug and system diagnostic interface frame.
+
+    Constructs a tabbed interface containing options to inspect runtime application
+    logs, verify SQLite database health, check USB printer status, and run
+    simulations for receipt printing workflows.
+
+    Args:
+        parent (tk.Widget): The parent Tkinter container frame.
+        set_judul_modul (Callable[[str], None]): Callback function to update the
+            active module title label in the parent layout.
+
+    Returns:
+        tk.Frame: The main outer container frame holding the debug interface.
+    """
     set_judul_modul(_("debug.app_title"))
     frame = tk.Frame(parent, bg="#f4f4f4")
     frame.pack(fill="both", expand=True)
@@ -42,17 +56,20 @@ def buka_debug_gui(parent, set_judul_modul):
     printer_area.pack(fill="x", padx=10)
 
     def refresh_printer():
+        """Fetch and display the latest application log entries."""
         status = cek_status_printer()
         printer_area.delete("1.0", "end")
         for k, v in status.items():
             printer_area.insert("end", f"{k}: {v}\n")
 
     def refresh_log():
+        """Query USB hardware and display the current printer status key-value pairs."""
         log_area.delete("1.0", "end")
         for line in ambil_log_terakhir():
             log_area.insert("end", line)
 
     def refresh_status():
+        """Query SQLite database health and display table status key-value pairs."""
         status = cek_status_database()
         status_area.delete("1.0", "end")
         for k, v in status.items():
@@ -74,6 +91,7 @@ def buka_debug_gui(parent, set_judul_modul):
     hasil_simulasi.pack(fill="x", padx=10, pady=5)
 
     def jalankan_simulasi():
+        """Validate transaction ID input and run the print simulation workflow."""
         transaksi_id = entry_id.get().strip()
         if not transaksi_id.isdigit():
             hasil_simulasi.delete("1.0", "end")

@@ -1,6 +1,10 @@
 import usb.core
 import usb.util
 
+"""
+This file only for checking, or debug, the usb printer.
+"""
+
 dev = usb.core.find(idVendor=0x28e9, idProduct=0x0289)
 
 if dev is None:

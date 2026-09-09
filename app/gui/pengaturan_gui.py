@@ -11,7 +11,23 @@ from app.core.pengaturan_core import(
 from app.translator import _, i18n
 
 def buka_pengaturan_gui(parent, set_judul_modul, refresh_app_ui=None):
-  # Menggunakan _() agar judul modul menyesuaikan bahasa aktif
+  """Build and display the application settings interface frame.
+
+  Constructs a multi-tabbed notebook layout containing configurations for receipt
+  formatting, thermal USB printer selection/testing, and runtime UI language
+  switching.
+
+  Args:
+      parent (tk.Widget): The parent Tkinter container frame.
+      set_judul_modul (Callable[[str], None]): Callback function to update the
+        active module title label in the parent layout.
+      refresh_app_ui (Optional[Callable[[], None]], optional): Optional
+        callback function to re-render the application UI after settings
+        (e.g., language) are modified. Defaults to None.
+
+  Returns:
+      tk.Frame: The main outer container frame holding the settings interface.
+  """
   set_judul_modul(_("pengaturan.set_title"))
 
   frame = tk.Frame(parent, bg="#f4f4f4")
@@ -49,6 +65,7 @@ def buka_pengaturan_gui(parent, set_judul_modul, refresh_app_ui=None):
   font_size_spin.pack()
 
   def simpan_nota():
+    """Extract receipt configuration input fields and save them to storage."""
     data = {
         "header": header_entry.get("1.0", "end").strip(),
         "footer": footer_entry.get("1.0", "end").strip(),
@@ -70,6 +87,7 @@ def buka_pengaturan_gui(parent, set_judul_modul, refresh_app_ui=None):
   preview_area.pack(fill="both", expand=True, padx=10, pady=10)
 
   def tampilkan_preview():
+    """Generate and display a mock sample receipt in the preview text area."""
     preview_area.delete("1.0", "end")
     header = header_entry.get("1.0", "end").strip()
     footer = footer_entry.get("1.0", "end").strip()
@@ -92,9 +110,6 @@ Total:      Rp25.000
       pady=5
   )
 
-  # ==========================================
-  # TAB 2: PRINTER
-  # ==========================================
   tab_printer = tk.Frame(notebook, bg="#f4f4f4")
   notebook.add(tab_printer, text=_("pengaturan.tab_printer_settings"))
 
@@ -105,6 +120,7 @@ Total:      Rp25.000
   printer_combo.pack()
 
   def simpan_printer():
+    """Save the selected USB printer vendor and product ID to configuration."""
     if not printer_combo.get():
       messagebox.showerror(_("pengaturan.msg_error"), _("pengaturan.err_select_printer"))
       return
@@ -113,6 +129,7 @@ Total:      Rp25.000
     messagebox.showinfo(_("pengaturan.msg_success"), _("pengaturan.msg_printer_saved"))
 
   def test_printer():
+    """Send a test print command to the selected USB printer device."""
     if not printer_combo.get():
       messagebox.showerror(_("pengaturan.msg_error"), _("pengaturan.err_select_printer"))
       return
@@ -130,9 +147,6 @@ Total:      Rp25.000
       tab_printer, text=_("pengaturan.btn_save_printer"), command=simpan_printer
   ).pack(pady=5)
 
-  # ==========================================
-  # TAB 3: BAHASA / LANGUAGE (TAMBAHAN BARU)
-  # ==========================================
   tab_lang = tk.Frame(notebook, bg="#f4f4f4")
   notebook.add(tab_lang, text=_("pengaturan.tab_language"))
 
@@ -144,7 +158,6 @@ Total:      Rp25.000
   )
   lbl_choose.pack(anchor="w", padx=15, pady=(15, 5))
 
-  # Pilihan Bahasa dengan RadioButton
   lang_var = tk.StringVar(value=i18n.current_lang)
 
   rb_id = tk.Radiobutton(
@@ -166,6 +179,7 @@ Total:      Rp25.000
   rb_en.pack(anchor="w", padx=25, pady=2)
 
   def ubah_bahasa():
+    """Update active locale setting and trigger application UI refresh."""
     pilihan = lang_var.get()
     i18n.set_language(pilihan)
 

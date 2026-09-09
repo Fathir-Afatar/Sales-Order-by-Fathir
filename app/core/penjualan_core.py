@@ -13,15 +13,36 @@ from app.core.stok_core import catat_log_stok
 from app.constants.config import get_connection
 conn = get_connection()
 
-# ── Hitung Total Penjualan ──
 def hitung_total_penjualan(daftar_barang):
+    """Calculates the gross total sales amount from a list of item dictionaries.
+
+    Args:
+        daftar_barang (List[Dict[str, Any]]): List of item dictionaries containing
+            'harga_satuan' and 'jumlah'.
+
+    Returns:
+        float: Sum of (harga_satuan * jumlah) across all items.
+    """
     total = 0
     for item in daftar_barang:
         total += item["harga_satuan"] * item["jumlah"]
     return total
 
-# ── Proses Penjualan ──
 def proses_penjualan(data):
+    """Processes a full sales transaction including inventory updates and stock logging.
+
+    Args:
+        data (Dict[str, Any]): Transaction details containing keys like
+            'daftar_barang', 'member_id', 'nama_member', 'ongkos_kirim', 'voucher',
+            'metode_bayar', 'catatan', and 'status'.
+
+    Returns:
+        int: Primary key ID of the newly inserted sales transaction.
+
+    Raises:
+        ValueError: If a product is not found or stock is insufficient.
+        Exception: Re-raises any database errors after rolling back.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -37,7 +58,6 @@ def proses_penjualan(data):
 
         total = hitung_total_penjualan(daftar_barang) + ongkos_kirim
 
-        # Simpan transaksi utama
         cursor.execute("""
             INSERT INTO transaksi_penjualan (
                 tanggal, kode_member, nama_member, total_harga, 
@@ -46,7 +66,6 @@ def proses_penjualan(data):
         """, (tanggal, member_id, nama_member, total, ongkos_kirim, voucher, metode_bayar, catatan, status))
         transaksi_id = cursor.lastrowid
 
-        # Simpan detail transaksi + kurangi stok
         for item in daftar_barang:
             produk_id = item["produk_id"]
             jumlah = item["jumlah"]
@@ -67,7 +86,7 @@ def proses_penjualan(data):
 
             ubah_stok_dan_catat_log(cursor, item["produk_id"], -jumlah, "KELUAR")
 
-            stok_awal = stok # dari SELECT sebelumnya
+            stok_awal = stok
             stok_akhir = stok_awal - jumlah
 
             catat_log_stok(cursor, item["produk_id"], stok_awal, stok_akhir, "KELUAR")
@@ -83,6 +102,14 @@ def proses_penjualan(data):
         conn.close()
 
 def get_nama_pembeli(member_id):
+    """Fetches buyer name from database by member ID.
+
+    Args:
+        member_id (Optional[Union[int, str]]): Member ID to search.
+
+    Returns:
+        str: Member name if found, else 'Tanpa Member'.
+    """
     if not member_id:
         return "Tanpa Member"
     conn = get_connection()
@@ -95,15 +122,34 @@ def get_nama_pembeli(member_id):
         conn.close()
 
 def cek_stok_minimum(threshold):
+    """Retrieves products whose stock is less than or equal to a threshold.
+
+    Args:
+        threshold (int): Minimum stock threshold limit.
+
+    Returns:
+        List[Tuple[Any, ...]]: List of product tuple records matching criteria.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT id_produk, nama_produk, stok FROM produk WHERE stok <= ?", (threshold,))
-        return cursor.fetchall()  # List produk dengan stok minim
+        return cursor.fetchall()
     finally:
         conn.close()
 
 def simpan_nota_penjualan_csv(transaksi_id, daftar_barang, total, path="nota.csv"):
+    """Exports transaction receipt details to a CSV file.
+
+    Args:
+        transaksi_id (int): Transaction ID number.
+        daftar_barang (List[Dict[str, Any]]): List of item dictionaries sold.
+        total (float): Grand total sales amount.
+        path (str): File destination path for CSV output. Defaults to 'nota.csv'.
+
+    Raises:
+        Exception: Re-raises any I/O file operation exceptions.
+    """
     try:
         with open(path, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
@@ -118,6 +164,16 @@ def simpan_nota_penjualan_csv(transaksi_id, daftar_barang, total, path="nota.csv
         raise e
 
 def simpan_detail_penjualan(transaksi_id, item_list):
+    """Saves item details for an existing transaction and updates inventory.
+
+    Args:
+        transaksi_id (int): Target sales transaction ID.
+        item_list (List[Dict[str, Any]]): List of sold items data.
+
+    Raises:
+        ValueError: If a product is missing or stock is insufficient.
+        Exception: Re-raises database errors after rollback.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -155,6 +211,12 @@ def simpan_detail_penjualan(transaksi_id, item_list):
         conn.close()
 
 def get_daftar_member():
+    """Retrieves all member records sorted alphabetically by name.
+
+    Returns:
+        List[Dict[str, Any]]: List of member dictionaries with keys 'id' and
+        'nama'.
+    """
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -166,6 +228,11 @@ def get_daftar_member():
     return [{"id": row[0], "nama": row[1]} for row in hasil]
 
 def load_transaksi_rincian(tree_widget):
+    """Fetches all transactions and inserts rows into a Tkinter Treeview widget.
+
+    Args:
+        tree_widget (Any): Target ttk.Treeview widget.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -182,6 +249,14 @@ def load_transaksi_rincian(tree_widget):
     tree_widget.update_idletasks()
         
 def cek_nama_member(member_id):
+    """Validates and retrieves member name by integer ID.
+
+    Args:
+        member_id (Union[int, str]): Member primary ID value.
+
+    Returns:
+        str: Member name or status string if invalid/missing.
+    """
     if not isinstance(member_id, int):
         return "[ID tidak valid]"
     conn = get_connection()
@@ -192,6 +267,13 @@ def cek_nama_member(member_id):
     return result[0] if result else "[Tidak ditemukan]"
 
 def handler_cek_nama_member(member_var, label_widget, daftar_member):
+    """Event handler for checking member presence from input field.
+
+    Args:
+        member_var (tk.StringVar): Tkinter variable holding input text.
+        label_widget (tk.Label): Target Tkinter Label for displaying status.
+        daftar_member (List[Dict[str, Any]]): Cached member dictionary list.
+    """
     nama_input = member_var.get().strip()
     member_id = next((m["id"] for m in daftar_member if m["nama"] == nama_input), None)
 
@@ -201,17 +283,24 @@ def handler_cek_nama_member(member_var, label_widget, daftar_member):
         label_widget.config(text=f"Nama Member: {nama_input}", fg="green")
 
 def hitung_total_transaksi(treeview, total_var, ongkir_entry=None):
+    """Calculates treeview item subtotals plus shipping cost, updating total variable.
+
+    Args:
+        treeview (Any): Tkinter Treeview widget containing item rows.
+        total_var (tk.StringVar): Target Tkinter variable for display.
+        ongkir_entry (Optional[tk.Entry]): Optional entry widget containing shipping
+            cost.
+    """
     total = 0
     for child in treeview.get_children():
         item = treeview.item(child)["values"]
         if len(item) >= 4:
             try:
-                subtotal = int(item[3])  # kolom ke-4 = subtotal
+                subtotal = int(item[3])
                 total += subtotal
             except:
                 pass
 
-    # Tambahkan ongkir jika ada
     if ongkir_entry:
         try:
             ongkir = float(ongkir_entry.get().strip())
@@ -222,6 +311,14 @@ def hitung_total_transaksi(treeview, total_var, ongkir_entry=None):
     total_var.set(f"Total: Rp{total:,}")
 
 def get_selected_transaksi_id(tree):
+    """Retrieves the transaction ID of the selected Treeview row.
+
+    Args:
+        tree (Any): Tkinter Treeview widget.
+
+    Returns:
+        Optional[int]: Selected transaction ID or None if no row selected.
+    """
     selected = tree.selection()
     if not selected:
         messagebox.showwarning("Pilih Transaksi", "Pilih transaksi terlebih dahulu.")
@@ -230,6 +327,16 @@ def get_selected_transaksi_id(tree):
     return item["values"][0]
 
 def get_detail_transaksi(transaksi_id):
+    """Retrieves sales transaction meta info along with its detailed item breakdown.
+
+    Args:
+        transaksi_id (Optional[int]): Transaction ID to lookup.
+
+    Returns:
+        Tuple[Optional[Dict[str, Any]], Optional[List[Dict[str, Any]]]]: Tuple of
+        (transaction_info_dict, list_of_items_dict), or (None, None) if not
+        found.
+    """
     if not transaksi_id:
         return None, None
 

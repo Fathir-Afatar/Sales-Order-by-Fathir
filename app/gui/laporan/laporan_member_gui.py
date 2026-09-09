@@ -6,3 +6,6 @@ from app.core.laporan.laporan_member_core import laporan_member_bulanan
 from laporan_member_gui import export_gambar_laporan
 from PIL import Image
 import os
+"""
+Deprecated.
+"""

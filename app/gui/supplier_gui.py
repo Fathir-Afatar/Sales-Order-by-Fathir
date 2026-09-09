@@ -7,19 +7,21 @@ import pandas as pd
 from app.core.supplier_core import semua_supplier, tambah_supplier, edit_supplier, hapus_supplier
 from app.translator import _, i18n
 
-# Setup Dasar
 def buat_frame_supplier(parent, set_judul_modul):
+    """Construct main UI layout frame and controls for the supplier module.
+
+    Args:
+        parent (tk.Tk): Parent Tkinter container.
+        set_judul_modul (Callable[[str], None]): Callback function to update title bar text.
+    """
     frame = tk.Frame(parent, bg="#f4f4f4")
 
-    # Frame atas: Tambah + Filter
     frame_top = tk.Frame(frame, bg="#f4f4f4")
     frame_top.pack(pady=10)
 
-    # Untuk Scroll
     frame_treeview = tk.Frame(frame, bg="#f4f4f4")
     frame_treeview.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # Treview lebih dulu untuk lambda
     tree = ttk.Treeview(frame_treeview, columns=("id", "nama", "alamat", "no_hp"), show="headings")
     tree.heading("id", text="ID")
     tree.heading("nama", text=_("supplier.nama_supplier"))
@@ -37,14 +39,12 @@ def buat_frame_supplier(parent, set_judul_modul):
     tk.Button(frame_top, text=_("supplier.btn_tambah"), command=lambda: buka_form_tambah_supplier(tree, frame)).pack(side="left", padx=5)
     tk.Button(frame_top, text=_("supplier.btn_import"), command= lambda: import_supplier_excel(tree)).pack(side="left", padx=5)
 
-    # Cari Nama
     tk.Label(frame_top, text=_("supplier.lbl_cari_nama")).pack(side="left", padx=5)
     entry_nama = tk.Entry(frame_top)
     entry_nama.pack(side="left", padx=5)
     tk.Button(frame_top, text=_("supplier.lbl_cari"), command=lambda: filter_supplier(tree, entry_nama)).pack(side="left", padx=5)
     tk.Button(frame_top, text="Reset", command=lambda: refresh_tree(tree)).pack(side="left", padx=5)
 
-    # Tampilkan Treeview + scroll
     tree.grid(row=0, column=0, sticky="nsew")
     scroll_y.grid(row=0, column=1, sticky="ns")
     scroll_x.grid(row=1, column=0, sticky="ew")
@@ -52,7 +52,6 @@ def buat_frame_supplier(parent, set_judul_modul):
     frame_treeview.grid_rowconfigure(0, weight=1)
     frame_treeview.grid_columnconfigure(0, weight=1)
 
-    # Frame Bawah: Edit + Hapus
     frame_bottom = tk.Frame(frame, bg="#f4f4f4")
     frame_bottom.pack(pady=10)
 
@@ -65,6 +64,11 @@ def buat_frame_supplier(parent, set_judul_modul):
     set_judul_modul(_("supplier.set_judul_modul"))
 
 def import_supplier_excel(tree):
+    """Parse supplier records from an Excel or CSV file and insert into the database.
+
+    Args:
+        tree (ttk.Treeview): Target Treeview instance to refresh after import.
+    """
     file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.csv")])
     if not file_path:
         return
@@ -99,12 +103,22 @@ def import_supplier_excel(tree):
         messagebox.showerror("Import Failed", str(e))
 
 def refresh_tree(tree):
+    """Fetch all suppliers from database and populate Treeview rows.
+
+    Args:
+        tree (ttk.Treeview): Target Treeview table to clear and repopulate.
+    """
     tree.delete(*tree.get_children())
     for s in semua_supplier():
         tree.insert("", tk.END, values=(s["id_supplier"], s["nama_supplier"], s["alamat"], s["no_hp"]))
 
-# Tambah Supplier
 def buka_form_tambah_supplier(tree, parent):
+    """Launch a pop-up Toplevel dialog for creating new supplier records.
+
+    Args:
+        tree (ttk.Treeview): Target Treeview instance to refresh after saving.
+        parent (tk.Widget): Parent Tkinter window container.
+    """
     form = tk.Toplevel(parent)
     form.title(_("supplier.form_title"))
     form.geometry("300x300")
@@ -119,6 +133,7 @@ def buka_form_tambah_supplier(tree, parent):
         entries.append(entry)
     
     def simpan():
+        """Save new supplier entry to database."""
         nama = entries[0].get().strip()
         alamat = entries[1].get().strip()
         no_hp = entries[2].get().strip()
@@ -137,6 +152,11 @@ def buka_form_tambah_supplier(tree, parent):
     tk.Button(form, text=_("supplier.simpan"), command=simpan).grid(row=3, column=0, columnspan=2, pady=20)
 
 def hapus_supplier_gui(tree):
+    """Delete selected supplier row in Treeview from database.
+
+    Args:
+        tree (ttk.Treeview): Source Treeview table.
+    """
     selected = tree.selection()
     if not selected:
         messagebox.showwarning(_("supplier.pilih_supplier"), _("supplier.warr_pilih_supplier"))
@@ -148,6 +168,12 @@ def hapus_supplier_gui(tree):
     refresh_tree(tree)
 
 def buka_form_edit_supplier(tree, parent):
+    """Launch a pop-up Toplevel dialog for editing selected supplier details.
+
+    Args:
+        tree (ttk.Treeview): Source Treeview containing selected supplier record.
+        parent (tk.Widget): Parent Tkinter window container.
+    """
     selected = tree.selection()
     if not selected:
         messagebox.showwarning(_("supplier.pilih_supplier"), _("supplier.warr_pilih_supplier"))
@@ -171,6 +197,7 @@ def buka_form_edit_supplier(tree, parent):
         entries.append(entry)
     
     def simpan():
+        """Save updated supplier data to database."""
         nama = entries[0].get().strip()
         alamat = entries[1].get().strip()
         no_hp = entries[2].get().strip()
@@ -192,6 +219,12 @@ def buka_form_edit_supplier(tree, parent):
     tk.Button(form, text=_("supplier.btn_simpan"), command=simpan).grid(row=3, column=0, columnspan=2, pady=20)
 
 def filter_supplier(tree, entry_nama):
+    """Filter Treeview rows by searching supplier name keyword.
+
+    Args:
+        tree (ttk.Treeview): Target Treeview table to display results.
+        entry_nama (tk.Entry): Entry widget containing user search keyword.
+    """
     keyword = entry_nama.get().strip().lower()
     tree.delete(*tree.get_children())
     for s in semua_supplier():

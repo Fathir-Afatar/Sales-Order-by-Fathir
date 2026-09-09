@@ -7,10 +7,16 @@ from tkinter import simpledialog
 from app.core.pembelian_core import tambah_pembelian, get_detail_pembelian, get_histori_pembelian, update_pembelian, get_produk_nama
 from app.core.supplier_core import ambil_supplier
 from app.core.product_core import ambil_daftar_produk, bersihkan_angka
-from app.constants.config import get_connection
 from app.translator import _, i18n
 
 def buat_frame_pembelian(parent, set_judul_modul):
+    """Build and initialize the procurement/purchase management interface frame.
+
+    Args:
+        parent (tk.Widget): Parent container widget.
+        set_judul_modul (Callable[[str], None]): Callback function to update the
+            active module title label.
+    """
     frame = tk.Frame(parent, bg="#f4f4f4")
     combo_supplier, supplier_map = build_supplier_section(frame)
     tree_input, entry_cari, reset_pencarian = build_produk_section(frame)
@@ -27,6 +33,15 @@ def buat_frame_pembelian(parent, set_judul_modul):
     set_judul_modul(_("pembelian.set_judul_modul"))
 
 def build_supplier_section(frame):
+    """Construct the supplier selection UI section.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+
+    Returns:
+        Tuple[ttk.Combobox, Dict[str, Any]]: Configured Combobox widget and a
+        dictionary mapping supplier names to their corresponding IDs.
+    """
     font_normal = ("Segoe UI", 10)
 
     frame_supplier = tk.Frame(frame)
@@ -42,6 +57,15 @@ def build_supplier_section(frame):
     return combo_supplier, supplier_map
 
 def build_produk_section(frame):
+    """Construct the product selection table, search input, and controls.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+
+    Returns:
+        Tuple[ttk.Treeview, tk.Entry, Callable[[], None]]: The product Treeview,
+        search Entry widget, and reset search function callback.
+    """
     font_normal = ("Segoe UI", 10)
 
     frame_input = tk.Frame(frame)
@@ -86,6 +110,14 @@ def build_produk_section(frame):
     return tree_input, entry_cari, reset_pencarian
 
 def build_histori_section(frame):
+    """Construct the purchasing history records treeview section.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+
+    Returns:
+        ttk.Treeview: Configured Treeview displaying purchase historical data.
+    """
     font_normal= ("Segoe UI", 10)
     frame_histori = tk.Frame(frame)
     frame_histori.pack(fill="both", expand=True, padx=10, pady=5)
@@ -107,6 +139,12 @@ def build_histori_section(frame):
     return tree_histori
 
 def tampilkan_produk(tree, list_produk):
+    """Populate the target Treeview table with product records.
+
+    Args:
+        tree (ttk.Treeview): Target Treeview instance.
+        list_produk (List[Dict[str, Any]]): List of product dictionary items.
+    """
     tree.delete(*tree.get_children())
     for p in list_produk:
         try:
@@ -116,6 +154,13 @@ def tampilkan_produk(tree, list_produk):
         tree.insert("", "end", values=("", p.get("kode_produk", "-"), p.get("nama", "-"), p.get("jumlah", 0), harga_format))
 
 def filter_produk(keyword, tree, produk_list):
+    """Filter product list based on a keyword and display the results.
+
+    Args:
+        keyword (str): Query string for matching against product code or name.
+        tree (ttk.Treeview): Target Treeview to render matched items.
+        produk_list (List[Dict[str, Any]]): Full source list of products.
+    """
     keyword = keyword.lower()
     if not keyword or keyword == _("pembelian.lbl_entry_cari"):
         tampilkan_produk(produk_list)
@@ -125,6 +170,12 @@ def filter_produk(keyword, tree, produk_list):
     tampilkan_produk(tree, hasil)
 
 def toogle_pilih(event, tree):
+    """Toggle selection checkmark state for a clicked row cell in column #1.
+
+    Args:
+        event (tk.Event): Tkinter mouse click event.
+        tree (ttk.Treeview): Targeted Treeview instance.
+    """
     item_id = tree.identify_row(event.y)
     col = tree.identify_column(event.x)
     if not item_id or col != "#1": # Pastikan klik di kolom "Pilih"
@@ -134,12 +185,33 @@ def toogle_pilih(event, tree):
     tree.item(item_id, values=values)
 
 def build_interaksi_pembelian(entry_cari, frame, tree_input, combo_supplier, produk_list, supplier_map):
+    """Configure interactive handlers and key bindings for purchasing actions.
+
+    Args:
+        entry_cari (tk.Entry): Search entry input widget.
+        frame (tk.Frame): Parent container frame.
+        tree_input (ttk.Treeview): Product selection Treeview.
+        combo_supplier (ttk.Combobox): Supplier dropdown widget.
+        produk_list (List[Dict[str, Any]]): List of available products.
+        supplier_map (Dict[str, Any]): Mapping of supplier names to IDs.
+    """
     setup_pencarian_produk(entry_cari, tree_input, produk_list)
     setup_edit_jumlah(tree_input)
     setup_konfirmasi_pembelian(frame, tree_input, combo_supplier, supplier_map)
 
 def setup_pencarian_produk(entry_cari, tree_input, produk_list):
+    """Set up search field initialization and reset behavior.
+
+    Args:
+        entry_cari (tk.Entry): Search entry input widget.
+        tree_input (ttk.Treeview): Target product Treeview widget.
+        produk_list (List[Dict[str, Any]]): Master list of products.
+
+    Returns:
+        Callable[[], None]: Reset callback function to clear search input.
+    """
     def reset_pencarian():
+        """Clear search box input and restore full product list."""
         entry_cari.delete(0, "end") # Kosongkan kotak pencarian
         tampilkan_produk(produk_list)
     entry_cari.delete(0, "end")
@@ -147,8 +219,17 @@ def setup_pencarian_produk(entry_cari, tree_input, produk_list):
     return reset_pencarian
 
 def setup_edit_jumlah(tree_input):    
-    # Edit Jumlah (dual click)
+    """Bind double-click event on Treeview rows to edit product quantity.
+
+    Args:
+        tree_input (ttk.Treeview): Targeted Treeview widget.
+    """
     def edit_jumlah(event):
+        """Open a dialog prompt to modify product selection quantity.
+
+        Args:
+            event (tk.Event): Double-click event instance.
+        """
         item_id = tree_input.focus()
         if not item_id:
             return
@@ -170,7 +251,25 @@ def setup_edit_jumlah(tree_input):
     tree_input.bind("<Double-1>", edit_jumlah)
 
 def setup_konfirmasi_pembelian(frame, tree_input, combo_supplier, supplier_map):
+    """Configure and return the confirmation handler for purchase transactions.
+
+    Args:
+        frame (tk.Frame): Parent container widget.
+        tree_input (ttk.Treeview): Product selection Treeview widget.
+        combo_supplier (ttk.Combobox): Supplier dropdown selection widget.
+        supplier_map (Dict[str, Any]): Mapping of supplier names to supplier IDs.
+
+    Returns:
+        Callable[[], None]: Callback function that launches the purchase
+        confirmation modal.
+    """
     def ambil_produk_terpilih():
+        """Extract and parse checked products with valid quantities from the tree view.
+
+        Returns:
+            List[Dict[str, Any]]: List of dictionaries containing selected product
+            data.
+        """
         hasil = []
         for item_id in tree_input.get_children():
             values = tree_input.item(item_id)["values"]
@@ -179,6 +278,7 @@ def setup_konfirmasi_pembelian(frame, tree_input, combo_supplier, supplier_map):
         return hasil  
 
     def buka_konfirmasi_pembelian():
+        """Display the purchase confirmation popup window with itemized breakdown."""
         produk_terpilih = ambil_produk_terpilih()
         if not produk_terpilih:
             messagebox.showinfo_("pembelian.info"), _("pembelian.lbl_tidak_dipilih")
@@ -229,6 +329,7 @@ def setup_konfirmasi_pembelian(frame, tree_input, combo_supplier, supplier_map):
         tk.Label(frame_total, text=f"Total Price: {total_format}", font=("Segoe UI", 10, "bold")).pack(pady=5)
 
         def simpan_ke_db():
+            """Persist the confirmed purchase transaction to the database."""
             supplier_id = supplier_map[supplier_nama]
             tambah_pembelian(supplier_id, produk_terpilih)
             messagebox.showinfo(_("pembelian.sukses"), _("pembelian.success_simpan"))
@@ -240,11 +341,27 @@ def setup_konfirmasi_pembelian(frame, tree_input, combo_supplier, supplier_map):
     return buka_konfirmasi_pembelian
 
 def build_histori_pembelian(frame):
+    """Construct and initialize the purchase history UI table.
+
+    Args:
+        frame (tk.Frame): Parent container widget.
+
+    Returns:
+        ttk.Treeview: Populated Treeview widget containing purchase records.
+    """
     tree_histori = setup_treeview_histori(frame)
     muat_histori(tree_histori)
     return tree_histori
 
 def setup_treeview_histori(frame):
+    """Build and lay out the purchase history Treeview structure.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+
+    Returns:
+        ttk.Treeview: Formatted history Treeview widget with scrollbar.
+    """
     font_normal = ("Segoe UI", 10)
     frame_histori = tk.Frame(frame)
     frame_histori.pack(fill="both", expand=True, padx=10, pady=5)
@@ -267,6 +384,11 @@ def setup_treeview_histori(frame):
     return tree_histori
 
 def muat_histori(tree_histori):
+    """Fetch purchase history logs and render them inside the treeview.
+
+    Args:
+        tree_histori (ttk.Treeview): Target history Treeview widget.
+    """
     tree_histori.delete(*tree_histori.get_children())
     histori = get_histori_pembelian()
     for id_pembelian, tanggal, supplier_nama, total in histori:
@@ -278,6 +400,14 @@ def muat_histori(tree_histori):
         tree_histori.insert("", "end", values=(id_pembelian, tanggal, supplier_nama, total_format))
 
 def simpan_pembelian(combo_supplier, tree_input, supplier_map, tree_histori):
+    """Validate form input, process new purchase order, and update transaction log.
+
+    Args:
+        combo_supplier (ttk.Combobox): Supplier dropdown widget.
+        tree_input (ttk.Treeview): Selected products input treeview.
+        supplier_map (Dict[str, Any]): Supplier mapping dict.
+        tree_histori (ttk.Treeview): History log treeview to refresh upon success.
+    """
     supplier_nama = combo_supplier.get()
     supplier_id = supplier_map.get(supplier_nama)
     if not supplier_id:
@@ -323,6 +453,14 @@ def simpan_pembelian(combo_supplier, tree_input, supplier_map, tree_histori):
     muat_histori(tree_histori)
 
 def bersihkan_rupiah(rp_string):
+    """Parse a formatted currency string into a clean floating-point number.
+
+    Args:
+        rp_string (str): Formatted Rupiah string (e.g., "Rp 10,000").
+
+    Returns:
+        float: Numerical float value extracted from input string.
+    """
     try :
         angka = rp_string.replace("Rp", "").replace(",","").strip()
         return float(angka)
@@ -331,6 +469,12 @@ def bersihkan_rupiah(rp_string):
         return 0.0
 
 def tambah_produk(event, tree_input):
+    """Open a dialog input to set target product quantity on event action.
+
+    Args:
+        event (tk.Event): Event instance containing click target position.
+        tree_input (ttk.Treeview): Product selection Treeview widget.
+    """
     item_id = tree_input.focus()
     if not item_id:
         return
@@ -348,15 +492,48 @@ def tambah_produk(event, tree_input):
         return
 
 def build_histori_interaksi(frame, tree_histori, tree_input, combo_supplier, supplier_map):
+    """Initialize interaction handlers and action triggers for purchase history UI.
+
+    Args:
+        frame (tk.Frame): Parent container widget.
+        tree_histori (ttk.Treeview): History log Treeview widget.
+        tree_input (ttk.Treeview): Selected products input Treeview widget.
+        combo_supplier (ttk.Combobox): Supplier dropdown widget.
+        supplier_map (Dict[str, Any]): Mapping of supplier names to supplier IDs.
+    """
     setup_detail_popup(tree_histori, frame)
     setup_btn_lihat_detail(tree_histori, frame)
     setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame)
 
 def setup_detail_popup(tree_histori, frame):
+    """Configure double-click and event bindings for displaying history detail popups.
+
+    Args:
+        tree_histori (ttk.Treeview): Target history Treeview widget.
+        frame (tk.Frame): Parent container widget.
+    """
     tampilkan_detail_manual(tree_histori, frame)
 
 def setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame, tree_histori):
+    """Construct and return callback for direct purchase order saving.
+
+    Args:
+        combo_supplier (ttk.Combobox): Supplier selection dropdown.
+        tree_input (ttk.Treeview): Product selection input Treeview.
+        supplier_map (Dict[str, Any]): Supplier lookup table.
+        frame (tk.Frame): Parent container frame.
+        tree_histori (ttk.Treeview): History Treeview widget for UI refresh.
+
+    Returns:
+        Callable[[], None]: Action callback for purchase execution.
+    """
     def ambil_produk_terpilih():
+        """Filter and gather checked products with positive quantities.
+
+        Returns:
+            List[Dict[str, Any]]: List of dictionary structures containing item
+            data.
+        """
         hasil = []
         for item_id in tree_input.get_children():
             values = tree_input.item(item_id)["values"]
@@ -365,6 +542,7 @@ def setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame, 
         return hasil
     
     def buka_konfirmasi_pembelian():
+        """Validate purchase inputs, execute transaction, and clear active form state."""
         produk_terpilih = ambil_produk_terpilih()
         if not produk_terpilih:
             messagebox.showinfo(_("pembelian.info"), _("pembelian.lbl_tidak_dipilih"))
@@ -391,10 +569,22 @@ def setup_btn_simpan_pembelian(combo_supplier, tree_input, supplier_map, frame, 
     return buka_konfirmasi_pembelian
    
 def setup_btn_lihat_detail(tree_histori, frame):
+    """Build and attach the detail view button widget to parent frame.
+
+    Args:
+        tree_histori (ttk.Treeview): Target history Treeview widget.
+        frame (tk.Frame): Parent container widget.
+    """
     btn_lihat_detail = tk.Button(frame, text=_("pembelian.btn_lihat_detail"), command=lambda: tampilkan_detail_manual(tree_histori, frame))
     btn_lihat_detail.pack(pady=5)
 
 def tampilkan_detail_manual(tree_histori, frame):
+    """Display transaction detail modal popup for currently selected history row.
+
+    Args:
+        tree_histori (ttk.Treeview): History Treeview containing records.
+        frame (tk.Frame): Parent container widget.
+    """
     selected = tree_histori.focus()
     if not selected:
         messagebox.showerror(_("pembelian.info"), _("pembelian.msg_pilih_histori"))
@@ -420,6 +610,7 @@ def tampilkan_detail_manual(tree_histori, frame):
     label_total.pack(pady=5)
  
     def simpan_koreksi():
+        """Validate modified detail data and update record in database."""
         hasil_koreksi = []
         for iid in tree_popup.get_children():
             v = tree_popup.item(iid)["values"]
@@ -436,6 +627,12 @@ def tampilkan_detail_manual(tree_histori, frame):
         window.destroy()
 
     def edit_qty_popup(event, tree):
+        """Allow inline editing of quantity cell via simple dialog box.
+
+        Args:
+            event (tk.Event): Target click event position.
+            tree (ttk.Treeview): Active popup Treeview widget.
+        """
         item_id = tree.identify_row(event.y)
         col = tree.identify_column(event.x)
 
@@ -451,6 +648,7 @@ def tampilkan_detail_manual(tree_histori, frame):
             tree.item(item_id, values=values)
 
     def batal_koreksi():
+        """Close detail modal without persisting changes."""
         window.destroy()
 
     frame_btn = tk.Frame(window)
@@ -459,6 +657,14 @@ def tampilkan_detail_manual(tree_histori, frame):
     tk.Button(frame_btn, text=_("pembelian.btn_frame_batal"), command=batal_koreksi).pack(side="right", padx=10)
 
 def setup_treeview_popup(window):
+    """Initialize and lay out Treeview structure inside popup modal.
+
+    Args:
+        window (tk.Toplevel): Parent dialog popup window.
+
+    Returns:
+        ttk.Treeview: Populated detail modal Treeview instance.
+    """
     frame_popup_scroll = tk.Frame(window)
     frame_popup_scroll.pack(fill="both", expand=True)
 
@@ -474,7 +680,18 @@ def setup_treeview_popup(window):
     return tree_popup
 
 def bind_edit_jumlah_popup(tree_popup, label_total):
+    """Bind double-click event to popup Treeview for quantity editing and total update.
+
+    Args:
+        tree_popup (ttk.Treeview): Detail popup Treeview widget.
+        label_total (tk.Label): Target UI Label widget showing calculated total.
+    """
     def edit_jumlah_popup(event):
+        """Process double click row selection to edit entry quantity.
+
+        Args:
+            event (tk.Event): Event instance from double-click binding.
+        """
         item_id = tree_popup.focus()
         if not item_id:
             return
@@ -498,6 +715,14 @@ def bind_edit_jumlah_popup(tree_popup, label_total):
     tree_popup.bind("<Double-1>", edit_jumlah_popup)
 
 def ambil_detail_terformat(pembelian_id):
+    """Retrieve and reformat transaction line items by ID.
+
+    Args:
+        pembelian_id (Any): Database record ID for target purchase transaction.
+
+    Returns:
+        List[Dict[str, Any]]: List of dictionary line items with formatted fields.
+    """
     detail = get_detail_pembelian(pembelian_id)
     hasil = []
     for kode, qty, harga in detail:

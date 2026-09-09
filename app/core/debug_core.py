@@ -19,15 +19,41 @@ logging.basicConfig(
 )
 
 def log_info(msg):
+    """Log an informational message to the application log file.
+
+    Args:
+        msg (str): Message text or information to record.
+    """
     logging.info(msg)
 
 def log_error(msg, exc=None):
+    """Log an error message to the application log file.
+
+    If an exception object is provided, the full stack trace will be recorded to
+    facilitate debugging.
+
+    Args:
+        msg (str): Error description or context message.
+        exc (Optional[Exception], optional): Exception instance caught during
+            runtime. Defaults to None.
+    """
     if exc:
         logging.error(msg, exc_info=True)
     else:
         logging.error(msg)
 
 def ambil_log_terakhir(jumlah_baris=50):
+    """Retrieve the last specified number of lines from the application log file.
+
+    Handles missing or empty log files gracefully to prevent UI runtime errors.
+
+    Args:
+        jumlah_baris (int, optional): Number of bottom log lines to read. Defaults
+            to 50.
+
+    Returns:
+        List[str]: List of log line strings, or a status message if empty or missing.
+    """
     if not os.path.exists(LOG_PATH):
         return["[INFO] Belum ada log."]
     with open(LOG_PATH, "r", encoding="utf-8") as f:
@@ -37,6 +63,19 @@ def ambil_log_terakhir(jumlah_baris=50):
     return lines[-jumlah_baris:]
 
 def cek_status_database():
+    """Check database connection status and count registered tables.
+
+    Attempts to establish a connection, fetch table metadata, and calculate the
+    database file size on disk.
+
+    Returns:
+        Dict[str, Any]: Dictionary containing database status metadata:
+            - status (str): "OK" on success, "ERROR" on failure.
+            - jumlah_tabel (int, optional): Total count of tables found.
+            - path (str, optional): Absolute database file path.
+            - ukuran (int, optional): File size in bytes.
+            - error (str, optional): Error message if connection fails.
+    """
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -62,19 +101,33 @@ def cek_status_database():
         }
 
 def log_transaksi_berhasil(transaksi_id):
+    """
+    Deprecated: This function no longer use.
+    """
     log_info(f"Transasksi #{transaksi_id} berhasil disimpan")
 
 def log_transaksi_gagal(transaksi_id, error):
+    """
+    Deprecated: This function no longer use.
+    """
     log_error(f"Transaksi #{transaksi_id} gagal: {error}")
 
 def log_cetak_berhasil(transaksi_id):
+    """
+    Deprecated: This function no longer use.
+    """
     log_info(f"Nota transaksi #{transaksi_id} berhasil dicetak ke printer")
 
 def log_cetak_gagal(transaksi_id, error):
+    """
+    Deprecated: This function no longer use.
+    """
     log_error(f"Cetak nota transaksi #{transaksi_id} gagal: {error}")
 
-# catatan, tambah log di fungsi penting di semua Modul
 def log_fungsi(nama_fungsi):
+    """
+    Deprecated: This function no longer use.
+    """
     from functools import wraps
     def decorator(func):
         @wraps(func)
@@ -85,6 +138,18 @@ def log_fungsi(nama_fungsi):
     return decorator
 
 def cek_status_printer():
+    """Check the connectivity and operational status of the default USB printer.
+
+    Reads default printer configurations, converts vendor and product IDs to
+    hexadecimal values, and verifies device presence via PyUSB (`libusb1`).
+
+    Returns:
+        Dict[str, Any]: Dictionary detailing printer status:
+            - status (str): "TERDETEKSI" or "TIDAK TERDETEKSI".
+            - vendor_id (str, optional): Vendor ID string if detected.
+            - product_id (str, optional): Product ID string if detected.
+            - error (str, optional): Reason for detection failure.
+    """
     try:
         printer = ambil_printer_default()
         log_info(f"[DEBUG] Printer default: {printer}")

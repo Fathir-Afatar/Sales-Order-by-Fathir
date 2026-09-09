@@ -6,7 +6,10 @@ from app.constants.config import get_connection
 
 conn = get_connection()
 
-# Get_product untuk ambil detail produk dari DB
+"""
+Deprecated. All of these function is no longer use.
+"""
+
 def ambil_produk(identifier, by_kode:True):
     conn = get_connection()
     cursor = conn.cursor()
@@ -25,7 +28,6 @@ def ambil_produk(identifier, by_kode:True):
         }
     return None
 
-# Fungsi kurangi stok produk
 def kurang_stok(id_produk, jumlah):
     conn = get_connection()
     cursor = conn.cursor()
@@ -33,19 +35,15 @@ def kurang_stok(id_produk, jumlah):
     conn.commit()
     conn.close()
 
-# Fungsi Simpan transaksi penjualan
 def simpan_transaksi(nama_member, keranjang, total, waktu, voucher_kode=None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # 1. Save Transaction
     cursor.execute("""
                    INSERT INTO transaksi_penjualan (nama_member, total_harga, waktu, voucher)
                    VALUES (?, ?, ?, ?)
                 """, (nama_member, total, waktu, voucher_kode))
     id_transaksi = cursor.lastrowid
-
-    # 2. Save transaction details + update stock
 
     for item in keranjang:
         cursor.execute("""
@@ -61,7 +59,6 @@ def simpan_transaksi(nama_member, keranjang, total, waktu, voucher_kode=None):
     conn.close()
     return id_transaksi
 
-# Validasi Voucher
 def cek_voucher(kode, nama_member):
     conn = get_connection()
     cursor = conn.cursor()
@@ -72,5 +69,5 @@ def cek_voucher(kode, nama_member):
     row = cursor.fetchone()
     conn.close()
     if row:
-        return row[0] # nilai potongan
+        return row[0]
     return 0

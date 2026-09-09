@@ -3,6 +3,16 @@ from app.constants.config import get_connection
 
 # Add Supplier
 def tambah_supplier(data):
+    """Inserts a new supplier record into the supplier table.
+
+    Args:
+        data (Dict[str, Any]): Dictionary containing supplier fields
+            ('nama_supplier', 'alamat', 'no_hp', 'kode_supplier').
+
+    Returns:
+        Optional[int]: The primary key ID of the newly inserted supplier row, or
+        None if operation fails.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -17,6 +27,16 @@ def tambah_supplier(data):
     conn.close()
 
 def edit_supplier(id_supplier, data):
+    """Updates existing supplier attributes dynamically based on provided dictionary keys.
+
+    Args:
+        id_supplier (int): Primary key ID of the supplier to update.
+        data (Dict[str, Any]): Dictionary containing fields to update.
+
+    Returns:
+        bool: True if records were modified, False if no fields were updated or no
+        rows affected.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -40,6 +60,14 @@ def edit_supplier(id_supplier, data):
     return True
 
 def hapus_supplier(id_supplier):
+    """Deletes a supplier record from the database by its primary key ID.
+
+    Args:
+        id_supplier (int): Primary key ID of the supplier to delete.
+
+    Returns:
+        bool: True if a row was deleted, False otherwise.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM supplier WHERE id_supplier = ?", (id_supplier,))
@@ -47,6 +75,12 @@ def hapus_supplier(id_supplier):
     conn.close()
 
 def semua_supplier():
+    """Retrieves all supplier records mapped to dynamic dictionary objects.
+
+    Returns:
+        List[Dict[str, Any]]: List of dictionaries representing full supplier
+        records.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM supplier")
@@ -56,6 +90,12 @@ def semua_supplier():
     return [dict(zip(columns, row)) for row in rows]
 
 def ambil_supplier():
+    """Fetches a simplified list of supplier IDs and names.
+
+    Returns:
+        List[Dict[str, Union[int, str]]]: List of dictionaries containing 'id' and
+        'nama'.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id_supplier, nama_supplier FROM supplier")

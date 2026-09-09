@@ -8,6 +8,17 @@ from app.core.laporan_core import get_ringkasan_laporan, get_histori_transaksi, 
 from app.translator import _, i18n
 
 def buat_frame_laporan(parent, set_judul_modul):
+    """Build and render the comprehensive reporting interface frame.
+
+    Constructs a multi-tab view containing summary cards, date-range filters, and
+    data treeviews for sales, purchases, operational expenses, and customer
+    member metrics.
+
+    Args:
+        parent (tk.Widget): The parent Tkinter container frame.
+        set_judul_modul (Callable[[str], None]): Callback function to update the
+            active module title label in the parent layout.
+    """
     set_judul_modul(_("laporan.set_judul_modul"))
 
     frame = tk.Frame(parent)
@@ -28,10 +39,8 @@ def buat_frame_laporan(parent, set_judul_modul):
     notebook.add(tab_pengeluaran, text=_("laporan.tab_pengeluaran"))
     notebook.add(tab_member, text=_("laporan.tab_member"))
 
-    # Build Filter Tanggal
     entry_awal, entry_akhir = build_filter_area(tab_laporan)
 
-    # Build Panel Ringkasan
     label_penjualan = build_panel(tab_laporan, _("laporan.tab_penjualan"), lambda: notebook.select(tab_penjualan))
     label_pembelian = build_panel(tab_laporan, _("laporan.tab_pembelian"), lambda: notebook.select(tab_pembelian))
     label_pengeluaran = build_panel(tab_laporan, _("laporan.tab_pengeluaran"), lambda: notebook.select(tab_pengeluaran))
@@ -41,8 +50,8 @@ def buat_frame_laporan(parent, set_judul_modul):
     tree_pengeluaran = build_treeview_with_scroll(tab_pengeluaran, [_("laporan.tanggal"), _("laporan.kategori"), _("laporan.nominal"), _("laporan.keterangan")])
     tree_member = build_treeview_with_scroll(tab_member, [_("laporan.nama"), _("laporan.total_belanja"), _("laporan.kontribusi"), _("laporan.frekuensi")])
 
-    # Tombol tampilkan
     def tampilkan_ringkasan():
+        """Fetch report data for the given date range and populate UI elements."""
         awal = entry_awal.get().strip()
         akhir = entry_akhir.get().strip()
         try:
@@ -63,16 +72,22 @@ def buat_frame_laporan(parent, set_judul_modul):
         data_member = get_ringkasan_member(awal, akhir)
 
         def format_rupiah(nilai):
+            """Format a numerical value as a Indonesian Rupiah currency string.
+
+            Args:
+                nilai (Union[int, float, str]): Numeric value to format.
+
+            Returns:
+                str: Formatted currency string (e.g., 'Rp 10.000').
+            """
             return f"Rp {int(nilai):,}".replace(".", ",")
 
-        # Kosongkan dulu
         for tree in [tree_penjualan, tree_pembelian, tree_pengeluaran]:
             for item in tree.get_children():
                 tree.delete(item)
         for item in tree_member.get_children():
             tree_member.delete(item)
         
-        # Isi ulang
         for row in hist_penjualan:
             total = format_rupiah(row["total_harga"])
             tanggal = row["tanggal"].split(" ")[0]
@@ -90,14 +105,21 @@ def buat_frame_laporan(parent, set_judul_modul):
         for row in data_member:
             tree_member.insert("", "end", values=(row["nama"], format_rupiah(row["total_belanja"]), format_rupiah(row["kontribusi"]), row["frekuensi"]))
 
-    # Tombol tampilkan di filter
     filter_frame = entry_awal.master
     tk.Button(filter_frame, text=_("laporan.filter_frame"), command=tampilkan_ringkasan).grid(row=0, column=4, padx=10)
 
     notebook.select(tab_laporan)
 
-# Komponen : Filter Area
 def build_filter_area(parent):
+    """Construct date filtering input components with default start/end dates.
+
+    Args:
+        parent (tk.Widget): The parent container widget.
+
+    Returns:
+        Tuple[tk.Entry, tk.Entry]: Pair containing the start-date entry and
+        end-date entry inputs.
+    """
     frame = tk.Frame(parent, bg="#f4f4f4")
     frame.pack(pady=10)
 
@@ -113,8 +135,18 @@ def build_filter_area(parent):
 
     return entry_awal, entry_akhir
 
-# Komponen: Panel Ringkasan
 def build_panel(parent, judul, command):
+    """Create a summary card frame displaying totals and a detail button.
+
+    Args:
+        parent (tk.Widget): The parent container widget.
+        judul (str): The summary title text for the card.
+        command (Callable[[], None]): Callback triggered when clicking the detail
+            button.
+
+    Returns:
+        tk.Label: The dynamic total label component inside the panel.
+    """
     panel = tk.LabelFrame(parent, text=judul, padx=10, pady=10, bg="#f4f4f4")
     panel.pack(fill="x", padx=20, pady=5)
 
@@ -126,6 +158,16 @@ def build_panel(parent, judul, command):
     return label
 
 def build_treeview_with_scroll(parent, kolom):
+    """Construct a scrollable Treeview widget for displaying tabular data.
+
+    Args:
+        parent (tk.Widget): The parent container widget.
+        kolom (List[str]): Header titles for the table columns.
+
+    Returns:
+        ttk.Treeview: Configured Treeview instance with attached vertical
+        scrollbar.
+    """
     container = tk.Frame(parent)
     container.pack(fill="both", expand=True, padx=10, pady=10)
 

@@ -1,5 +1,3 @@
-# Tempat menyusun identitas toko dalam bentuk nota, sepert kop, logo, ucapan terimakasih, catatan footer.
-
 # Standard Library
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -9,17 +7,25 @@ import os
 CONFIG_PATH = r"C:\Users\Fathir\Documents\pos-pintar-by-fathir\config\nota_config.json"
 
 def simpan_config(data):
+    """Persist system configuration settings to a local JSON file.
+
+    Args:
+        data (Dict[str, str]): Dictionary containing configuration keys and
+            values.
+    """
     os.makedirs("config", exist_ok=True)
     with open(CONFIG_PATH, "w") as f:
         json.dump(data, f, indent=4)
     messagebox.showinfo("Disimpan", "Pengaturan nota berhasil disimpan!")
 
 def pilih_logo():
+    """Open a file dialog to select an image file for the store logo."""
     path = filedialog.askopenfilename(title="Pilih Logo", filetypes=[("Image Files", "*.png*.jpg")])
     entry_logo.delete(0, tk.END)
     entry_logo.insert(0, path)
 
 def main():
+    """Initialize and render the main receipt configuration editor window."""
     global entry_kop, entry_footer, entry_logo
 
     window = tk.Tk()
@@ -44,6 +50,7 @@ def main():
     entry_footer.pack(pady=5)
 
     def simpan():
+        """Extract form values and invoke configuration storage."""
         data = {
             "kop": entry_kop.get(),
             "logo": entry_logo.get(),
@@ -58,8 +65,8 @@ def main():
 
     window.mainloop()
 
-# Untuk Preview Nota
 def preview_nota():
+    """Launch a preview modal dialog rendering receipt details with dummy data."""
     if not os.path.exists(CONFIG_PATH):
         messagebox.showerror("Error", "Config belum tersedia!")
         return
@@ -67,8 +74,6 @@ def preview_nota():
     with open(CONFIG_PATH, "r") as f:
         config = json.load(f)
     
-
-    # Dummy data transaksi
     transaksi_dummy = {
         "tanggal": "2025-07-18",
         "id": "TRX0021",
@@ -87,7 +92,6 @@ def preview_nota():
     ranting = config.get("ranting", "Timur")
     tk.Label(frame, text=f"Ranting: {ranting}").pack(anchor="w")
 
-    #Logo + Kop Horizontal
     logo_path = config.get("logo", "")
     top_frame = tk.Frame(frame)
     top_frame.pack()
@@ -104,10 +108,8 @@ def preview_nota():
     kop_label = tk.Label(top_frame, text=config.get("kop", "POS Pintar "), font=("Helvetica", 12, "bold"), justify="left")
     kop_label.pack(side="left", padx=10)
     
-    # Garis
     tk.Label(frame, text="-" * 45).pack()
 
-    # Info transaksi
     info = transaksi_dummy
     tk.Label(frame, text=f"Tanggal: {info['tanggal']} ID:{info['id']}").pack(anchor="w")
     tk.Label(frame, text=f"Member: {info['member']} Ranting: {ranting}").pack(anchor="w")
@@ -124,7 +126,6 @@ def preview_nota():
     tk.Label(frame, text= "-" * 45).pack()
     tk.Label(frame, text=f"Total: {'':.25} Rp{total:,},", font=("Helvetica", 10, "bold")).pack(anchor="e", pady=5)
 
-    # Footer / Ucapan
     tk.Label(frame, text=config.get("foooter", ""), font=("Helvetica", 9, "italic")).pack()
     
 

@@ -3,11 +3,21 @@ import sqlite3
 
 # Local application
 from app.constants.config import get_connection
-conn = get_connection
 
 def get_detail_transaksi(id_transaksi, tipe):
+    """Retrieves detailed record item(s) for a specific transaction type.
+
+    Args:
+        id_transaksi (int): Unique transaction identifier.
+        tipe (str): Type of transaction ('penjualan', 'pembelian', or
+            'pengeluaran').
+
+    Returns:
+        Union[List[Dict[str, Any]], Dict[str, Any]]: A list of detailed line items
+        for sales/purchases, or a single detail dictionary for expenses.
+    """
     conn = get_connection()
-    conn.row_factory = sqlite3.Row # Akses kolom by name
+    conn.row_factory = sqlite3.Row
 
     cursor = conn.cursor()
 
@@ -46,24 +56,31 @@ def get_detail_transaksi(id_transaksi, tipe):
         return []
     
 def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
+    """Summarizes total amounts for sales, purchases, and expenses over a date range.
+
+    Args:
+        tanggal_awal (str): Start date string (YYYY-MM-DD).
+        tanggal_akhir (str): End date string (YYYY-MM-DD).
+
+    Returns:
+        Dict[str, float]: Aggregated totals for 'penjualan', 'pembelian', and
+        'pengeluaran'.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Total Penjualan
     cursor.execute("""
         SELECT SUM(total_harga) FROM transaksi_penjualan
         WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
     """, (tanggal_awal, tanggal_akhir))
     total_penjualan = cursor.fetchone()[0] or 0
 
-    # Total Pembelian
     cursor.execute("""
         SELECT SUM(total_harga) FROM transaksi_pembelian
         WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
     """, (tanggal_awal, tanggal_akhir))
     total_pembelian = cursor.fetchone()[0] or 0
 
-    # Total Pengeluaran
     cursor.execute("""
         SELECT SUM(nominal) FROM pengeluaran
         WHERE DATE(tanggal) BETWEEN DATE(?) AND DATE(?)
@@ -79,6 +96,18 @@ def get_ringkasan_laporan(tanggal_awal, tanggal_akhir):
     }
 
 def get_histori_transaksi(tipe, tanggal_awal, tanggal_akhir):
+    """Fetches a list of transaction history records for a given type within a date range.
+
+    Args:
+        tipe (str): Type of transaction ('penjualan', 'pembelian', or
+            'pengeluaran').
+        tanggal_awal (str): Start date string (YYYY-MM-DD).
+        tanggal_akhir (str): End date string (YYYY-MM-DD).
+
+    Returns:
+        List[Dict[str, Any]]: List of matching transaction records sorted by date
+        descending.
+    """
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -114,6 +143,14 @@ def get_histori_transaksi(tipe, tanggal_awal, tanggal_akhir):
     return []
 
 def get_nama_supplier(supplier_id):
+    """Retrieves the supplier's name by ID.
+
+    Args:
+        supplier_id (int): Unique identifier of the supplier.
+
+    Returns:
+        str: The supplier's name if found, otherwise a default fallback label.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT nama_supplier FROM supplier WHERE id_supplier = ?", (supplier_id,))
@@ -122,6 +159,16 @@ def get_nama_supplier(supplier_id):
     return row[0] if row else f"ID {supplier_id}"
 
 def get_ringkasan_member(tanggal_awal, tanggal_akhir):
+    """Generates member spending summary along with their profit contribution.
+
+    Args:
+        tanggal_awal (str): Start date string (YYYY-MM-DD).
+        tanggal_akhir (str): End date string (YYYY-MM-DD).
+
+    Returns:
+        List[Dict[str, Any]]: Member records including purchase frequency, total
+        spent, and gross profit contribution.
+    """
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -150,12 +197,21 @@ def get_ringkasan_member(tanggal_awal, tanggal_akhir):
             "nama": row["nama"],
             "frekuensi": row["frekuensi"],
             "total_belanja": row["total_belanja"] or 0,
-            "kontribusi": laba_map.get(id_member, 0) # bisa dihitung margin nanti
+            "kontribusi": laba_map.get(id_member, 0)
         })
     conn.close()
     return hasil    
 
 def get_laba_member(tanggal_awal, tanggal_akhir):
+    """Calculates total gross profit generated per member within a given date range.
+
+    Args:
+        tanggal_awal (str): Start date string (YYYY-MM-DD).
+        tanggal_akhir (str): End date string (YYYY-MM-DD).
+
+    Returns:
+        Dict[Optional[str], float]: Mapping of member ID to total profit.
+    """
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()

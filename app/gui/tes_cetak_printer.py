@@ -4,7 +4,9 @@ from app.core.debug_core import log_error
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 #from local_escpos.printer import Usb
 from escpos.printer import Usb
-
+"""
+Deprecated. Only for testing.
+"""
 def test_cetak_usb(vendor_id, product_id):
     try:
         p = Usb(vendor_id, product_id)

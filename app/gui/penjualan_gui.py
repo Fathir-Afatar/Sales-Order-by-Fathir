@@ -20,6 +20,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 transaksi_terakhir = None
 
 def buat_frame_penjualan(parent, set_judul_modul):
+    """Construct and initialize the primary UI frame for sales transactions.
+
+    Args:
+        parent (tk.Widget): Parent container widget.
+        set_judul_modul (Callable[[str], None]): Callback function to set header
+            module title.
+
+    Returns:
+        tk.Frame: Configured main sales module container frame.
+    """
     frame = tk.Frame(parent)
     frame.pack(fill="both", expand=True)
     set_judul_modul(_("penjualan.set_judul_modul"))
@@ -44,18 +54,23 @@ def buat_frame_penjualan(parent, set_judul_modul):
     }
     #------Handler Tombol -----------
     def tambah_ke_keranjang():
+        """Add selected item from input form to shopping cart."""
         tambah_item_ke_keranjang(form_refs, produk_display_list, keranjang, tree)
     
     def simpan_transaksi():
+        """Remove selected product row from current cart state."""
         proses_transaksi(form_refs, keranjang, tree, rincian_tree, state_transaksi, lambda: update_total(form_refs, keranjang))
     
     def hapus_produk():
+        """Remove selected product row from current cart state."""
         hapus_produk_terpilih(tree, keranjang, lambda: update_total(form_refs, keranjang))
     
     def reset_transaksi_gui():
+        """Clear transaction parameters and reset UI controls."""
         reset_transaksi(form_refs, keranjang, tree, lambda: update_total(form_refs, keranjang))
     
     def preview_nota_gui():
+        """Open receipt preview dialog using latest transaction state."""
         preview_nota(
             state_transaksi["terakhir_id"],
             state_transaksi["pembeli"],
@@ -87,6 +102,15 @@ def buat_frame_penjualan(parent, set_judul_modul):
     return frame
 
 def buat_notebook_penjualan(frame):
+    """Create and attach tabbed notebook interface to container frame.
+
+    Args:
+        frame (tk.Frame): Parent container widget.
+
+    Returns:
+        Tuple[tk.Frame, tk.Frame]: Container frames for transaction tab and details
+        tab.
+    """
     notebook = ttk.Notebook(frame)
     notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -98,6 +122,12 @@ def buat_notebook_penjualan(frame):
     return tab_transaksi, tab_rincian
 
 def ambil_produk_dan_display():
+    """Fetch product records and build lookup table mapped by display string.
+
+    Returns:
+        Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]: Raw product list and
+        mapped dictionary indexed by formatted product label.
+    """
     produk_list = semua_produk()
     produk_display_list = {
         f"{p['nama_produk']} (ID {p['id_produk']})": p for p in produk_list
@@ -105,6 +135,17 @@ def ambil_produk_dan_display():
     return produk_list, produk_display_list
 
 def buat_form_input_penjualan(tab_transaksi, produk_display_list):
+    """Construct entry inputs, labels, and autosuggest controls for sales form.
+
+    Args:
+        tab_transaksi (tk.Frame): Target tab container for sales input controls.
+        produk_display_list (Dict[str, Dict[str, Any]]): Product lookup data
+            structure.
+
+    Returns:
+        Dict[str, Any]: Dictionary containing references to instantiated GUI
+        components and variables.
+    """
     produk_var = tk.StringVar()
     total_var = tk.StringVar(value="Total: Rp0")
     member_var = tk.StringVar()
@@ -147,6 +188,7 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     daftar_member = get_daftar_member()
 
     def update_member_listbox(event=None):
+        """Filter member options dynamically based on text input."""
         typed = member_var.get().lower()
         member_listbox.delete(0, tk.END)
         filtered = [m for m in daftar_member if typed in m["nama"].lower()]
@@ -155,6 +197,7 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
         member_listbox.grid() if filtered else member_listbox.grid_remove()
     
     def pilih_member(event=None):
+        """Set selected member name from listbox into active entry variable."""
         selected = member_listbox.get(tk.ACTIVE)
         member_var.set(selected)
         member_listbox.grid_remove()
@@ -190,6 +233,15 @@ def buat_form_input_penjualan(tab_transaksi, produk_display_list):
     }
 
 def buat_keranjang_penjualan(tab_transaksi):
+    """Construct treeview widget and state container for shopping cart data.
+
+    Args:
+        tab_transaksi (tk.Frame): Parent container widget for transaction tab.
+
+    Returns:
+        Tuple[ttk.Treeview, List[Dict[str, Any]]]: Tuple containing initialized
+        Treeview instance and empty cart data list.
+    """
     keranjang_frame = tk.Frame(tab_transaksi)
     keranjang_frame.grid(row=2, column=0, columnspan=4, padx=10, pady=10)
 
@@ -211,6 +263,13 @@ def buat_keranjang_penjualan(tab_transaksi):
     return tree, keranjang
 
 def filter_produk(refs, produk_display_list):
+    """Filter product search listbox choices based on active user query.
+
+    Args:
+        refs (Dict[str, Any]): Dictionary of reference controls and variables.
+        produk_display_list (Dict[str, Dict[str, Any]]): Map of formatted label to
+            product object.
+    """
     typed = refs["produk_var"].get().lower()
     listbox = refs["produk_listbox"]
     listbox.delete(0, tk.END)
@@ -223,6 +282,11 @@ def filter_produk(refs, produk_display_list):
         listbox.grid_remove()
 
 def pilih_produk(refs):
+    """Apply selected product from autosuggest listbox to form entry.
+
+    Args:
+        refs (Dict[str, Any]): Dictionary of reference controls and variables.
+    """
     listbox = refs["produk_listbox"]
     selection = listbox.curselection()
     if selection:
@@ -232,6 +296,14 @@ def pilih_produk(refs):
         listbox.grid_remove()
 
 def tambah_item_ke_keranjang(refs, produk_display_list, keranjang, tree):
+    """Validate selection, compute pricing details, and append item to cart data.
+
+    Args:
+        refs (Dict[str, Any]): Dictionary of reference controls and variables.
+        produk_display_list (Dict[str, Dict[str, Any]]): Product options map.
+        keranjang (List[Dict[str, Any]]): Active shopping cart collection list.
+        tree (ttk.Treeview): GUI table representation of items.
+    """
     nama_produk_gui = refs["produk_var"].get()
     produk_data = produk_display_list.get(nama_produk_gui)
     if not produk_data:
@@ -270,6 +342,12 @@ def tambah_item_ke_keranjang(refs, produk_display_list, keranjang, tree):
     update_total(refs, keranjang)
 
 def update_total(refs, keranjang):
+    """Recalculate cumulative cart pricing including optional delivery fees.
+
+    Args:
+        refs (Dict[str, Any]): Dictionary of reference controls and variables.
+        keranjang (List[Dict[str, Any]]): Active cart collection list.
+    """
     total = sum(item["subtotal"] for item in keranjang)
     try:
         ongkir_input = refs["ongkir_entry"].get().strip()
@@ -281,6 +359,14 @@ def update_total(refs, keranjang):
     refs["total_var"].set(f"Total: Rp{total:,.0f}")
 
 def hapus_produk_terpilih(tree, keranjang, update_total_fn):
+    """Remove highlighted item row from treeview widget and active cart state.
+
+    Args:
+        tree (ttk.Treeview): Shopping cart table UI element.
+        keranjang (List[Dict[str, Any]]): Active cart collection list.
+        update_total_fn (Callable[[], None]): Callback to trigger total price
+            update.
+    """
     selected_item = tree.selection()
     if not selected_item:
         messagebox.showwarning(_("penjualan.war_hapus"), _("penjualan.pilih_baris_produk"))
@@ -297,6 +383,14 @@ def hapus_produk_terpilih(tree, keranjang, update_total_fn):
     update_total_fn()
 
 def reset_transaksi(refs, keranjang, tree, update_total_fn):
+    """Clear active cart collections and reset associated entry form elements.
+
+    Args:
+        refs (Dict[str, Any]): Dictionary of reference controls and variables.
+        keranjang (List[Dict[str, Any]]): Active cart collection list.
+        tree (ttk.Treeview): Shopping cart table element.
+        update_total_fn (Callable[[], None]): Callback to recompute total string.
+    """
     keranjang.clear()
     tree.delete(*tree.get_children())
     refs["jumlah_entry"].delete(0, tk.END)
@@ -306,6 +400,17 @@ def reset_transaksi(refs, keranjang, tree, update_total_fn):
     update_total_fn()
 
 def preview_nota(transaksi_id, pembeli, keranjang, total, status="DRAFT", ongkir=0):
+    """Launch a pop-up window previewing structured receipt text layout.
+
+    Args:
+        transaksi_id (Any): Database record primary key identifier.
+        pembeli (str): Name or label of customer.
+        keranjang (List[Dict[str, Any]]): Purchased items data payload.
+        total (float): Net total financial cost.
+        status (str, optional): Order completion state string. Defaults to
+            "DRAFT".
+        ongkir (float, optional): Extra delivery fee amount. Defaults to 0.
+    """
     nota_text = format_nota_thermal(transaksi_id, pembeli, keranjang, total, status=status, ongkir=ongkir)
 
     preview_window = tk.Toplevel()
@@ -323,6 +428,17 @@ def preview_nota(transaksi_id, pembeli, keranjang, total, status="DRAFT", ongkir
 
 
 def proses_transaksi(refs, keranjang, tree, rincian_tree, state_transaksi, update_total_fn):
+    """Execute, finalize, and write active transaction records to database.
+
+    Args:
+        refs (Dict[str, Any]): Reference dictionary containing GUI form elements.
+        keranjang (List[Dict[str, Any]]): Collection of current order item entries.
+        tree (ttk.Treeview): Order cart table UI component.
+        rincian_tree (ttk.Treeview): Detailed sales table element to be reloaded.
+        state_transaksi (Dict[str, Any]): Mutable dictionary containing order
+            metadata.
+        update_total_fn (Callable[[], None]): Callback updating calculation labels.
+    """
     ongkir_input = refs["ongkir_entry"].get().strip()
     conn = get_connection()
     cursor = conn.cursor()
@@ -360,6 +476,15 @@ def proses_transaksi(refs, keranjang, tree, rincian_tree, state_transaksi, updat
         conn.close()
 
 def simpan_nota_csv(transaksi_id, pembeli, keranjang, total, ongkir=0):
+    """Write sales receipt data to a local text file and show confirmation message.
+
+    Args:
+        transaksi_id (Any): Database record primary key identifier.
+        pembeli (str): Customer name or buyer label.
+        keranjang (List[Dict[str, Any]]): Collection of items in the transaction.
+        total (float): Net total payment amount.
+        ongkir (float, optional): Delivery fee amount. Defaults to 0.0.
+    """
     nota = format_nota_thermal(transaksi_id, pembeli, keranjang, total, ongkir=ongkir)
     filename = f"nota_{transaksi_id}.txt"
     with open(filename, "w", newline="", encoding="utf-8") as f:
@@ -367,6 +492,15 @@ def simpan_nota_csv(transaksi_id, pembeli, keranjang, total, ongkir=0):
     messagebox.showinfo(_("penjualan.nota"), _("penjualan.msg_nota_transaksi").format(file=filename),)
 
 def buat_tombol_penjualan(frame, handlers, state_refs):
+    """Create action buttons for managing transaction operations in sales tab.
+
+    Args:
+        frame (tk.Frame): Parent GUI frame container.
+        handlers (Dict[str, Callable[[], None]]): Mapping of action names to
+            callback functions.
+        state_refs (Dict[str, Any]): Dictionary of state variables and control
+            references.
+    """
     tk.Button(frame, text=_("penjualan.tambah_keranjang"), command=handlers["tambah"]).grid(row=0, column=0, padx=5)
     tk.Button(frame, text=_("penjualan.simpan"), command=handlers["simpan"]).grid(row=0, column=1, padx=5)
     tk.Button(frame, text=_("penjualan.hapus_produk"), command=handlers["hapus"]).grid(row=0, column=2, padx=5)
@@ -393,6 +527,16 @@ def buat_label_total(frame, total_var):
     return label
 
 def buat_tab_rincian(tab_rincian):
+    """Construct treeview widget and detail panel for sales details tab.
+
+    Args:
+        tab_rincian (tk.Frame): Parent container widget for transaction details
+            tab.
+
+    Returns:
+        Tuple[ttk.Treeview, tk.Frame]: Tuple containing initialized Treeview
+        table and detail frame container.
+    """
     tk.Label(tab_rincian, text=_("penjualan.label_rincian"), font=("Arial", 12, "bold")).grid(row=0, column=0, padx=10, pady=10)
 
     tree_frame = tk.Frame(tab_rincian)
@@ -416,6 +560,11 @@ def buat_tab_rincian(tab_rincian):
     return tree, detail_frame
     
 def lihat_detail_transaksi_cetak(tree):
+    """Display transaction details popup with options to render receipt or download.
+
+    Args:
+        tree (ttk.Treeview): Treeview instance containing transaction records.
+    """
     transaksi_id = get_selected_transaksi_id(tree)
     if not transaksi_id:
         return
@@ -454,6 +603,12 @@ def lihat_detail_transaksi_cetak(tree):
     cetak_button.pack(pady=10)
 
 def simpan_nota_sebagai_gambar(nota_text, transaksi_id):
+    """Render raw text receipt onto an image canvas and save as PNG file.
+
+    Args:
+        nota_text (str): Preformatted receipt text content.
+        transaksi_id (Any): Database record primary key identifier.
+    """
     font_path = "C:/Windows/Fonts/consola.ttf"
     font = ImageFont.truetype(font_path, 14)
 

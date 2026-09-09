@@ -8,6 +8,7 @@ from app.core.member_core import tambah_member, semua_member, update_member, hap
 from app.translator import _, i18n
 
 def refresh_tree():
+    """Refresh and repopulate the member Treeview widget with current data."""
     tree.delete(*tree.get_children())
     for row in semua_member():
         tree.insert("", tk.END, iid=row["id_member"], values=(
@@ -17,6 +18,7 @@ def refresh_tree():
         print(f"[DEBUG] tree inserted: ID = {row['id_member']}, values ={(row['kode_member'], row['nama'], row['no_hp'], row['alamat'], row['tipe'], row['ranting'])}")
 
 def update_filter_dropdowns():
+    """Extract distinct member types and branch categories to refresh filter dropdowns."""
     all_member = semua_member()
     tipe_values = sorted(set([
         d["tipe"] for d in all_member
@@ -36,6 +38,7 @@ def update_filter_dropdowns():
 
 
 def tambah_member_gui():
+    """Launch a top-level popup dialog to manually register a new member."""
     popup = tk.Toplevel()
     popup.title(_("member.pop_title"))
     popup.geometry("400x400")
@@ -43,12 +46,19 @@ def tambah_member_gui():
     frame_form.pack(padx=10, pady=10)
 
     def create_entry(label):
+        """Create and pack a labeled entry field inside the form frame.
+
+        Args:
+            label (str): Text description for the input field label.
+
+        Returns:
+            tk.Entry: Configured entry widget.
+        """
         tk.Label(frame_form, text=label).pack(anchor='w')
         entry = tk.Entry(frame_form)
         entry.pack(fill='x')
         return entry
     
-    # Entry fields
     entry_kode_member = create_entry(_("member.entry_kode"))
     entry_nama = create_entry(_("member.entry_nama"))
     entry_nomor = create_entry(_("member.entry_no_hp"))
@@ -59,6 +69,7 @@ def tambah_member_gui():
     entries = [entry_nama, entry_nomor, entry_alamat, entry_tipe, entry_ranting, entry_kode_member]
 
     def simpan_member():
+        """Extract entry values, persist the new member, and refresh UI components."""
         nama = entry_nama.get()
         alamat = entry_alamat.get()
         nomor = entry_nomor.get()
@@ -77,8 +88,8 @@ def tambah_member_gui():
 
     tk.Button(popup, text=_("member.simpan"), command=simpan_member).pack(pady=10)
 
-
 def import_member_excel():
+    """Import member records from an external Excel (.xlsx) or CSV file."""
     filepath = filedialog.askopenfilename(
         title=(("member.title_pilih")),
         filetypes=[("Excel Files", "*.xlsx *.csv")]
@@ -119,6 +130,11 @@ def import_member_excel():
         messagebox.showerror("Import Failed", str(e))
 
 def on_tree_select(event):
+    """Handle the Treeview selection event and populate mapped form input fields.
+
+    Args:
+        event (tk.Event): Tkinter selection event instance.
+    """
     global selected_id
     selected_id = tree.focus()
     values = tree.item(selected_id)["values"]
@@ -134,6 +150,11 @@ def on_tree_select(event):
                 entry_map[col].insert(0, values[i])
 
 def edit_member_gui(parent):
+    """Launch a top-level popup dialog to modify selected member details.
+
+    Args:
+        parent (tk.Widget): Parent container widget for the popup modal.
+    """
     selected_item = tree.focus()
     if not selected_item:
         messagebox.showwarning(_("member.warning_pilih"))
@@ -147,6 +168,15 @@ def edit_member_gui(parent):
     popup.geometry("400x400")
 
     def create_entry(label, value):
+        """Create a pre-filled entry input widget inside the popup dialog.
+
+        Args:
+            label (str): Label string describing the entry purpose.
+            value (Any): Initial value to insert into the input field.
+
+        Returns:
+            tk.Entry: Populated entry widget instance.
+        """
         tk.Label(popup, text=label).pack(anchor='w')
         entry = tk.Entry(popup)
         entry.insert(0, value)
@@ -161,6 +191,7 @@ def edit_member_gui(parent):
     entry_ranting = create_entry(_("member.entry_ranting"), values[6])
 
     def simpan_perubahan():
+        """Save modified member details to the database and close the modal."""
         try:
             update_member(selected_item,
                           entry_nama.get(),
@@ -175,12 +206,12 @@ def edit_member_gui(parent):
             popup.destroy()
         except Exception as e:
             messagebox.showerror("Error", str(e))
-    # Tombol di jendela edit
 
     tk.Button(popup, text=_("member.btn_simpan"), command=simpan_perubahan).pack(pady=5)
     tk.Button(popup, text=_("member.batal"), command=popup.destroy).pack()
 
 def hapus_member_gui():
+    """Delete the currently selected member record following user confirmation."""
     if not selected_id:
         messagebox.showwarning(_("member.warr_pilih_member"))
         return
@@ -193,6 +224,16 @@ def hapus_member_gui():
             messagebox.showerror(_("member.err_gagal_hapus"), str(e))
 
 def buat_frame_member(parent, set_judul_modul):
+    """Build and render the main member management module interface.
+
+    Constructs the member toolbar, dynamic category filter controls, search input
+    area, data grid treeview, and action buttons for editing/deleting records.
+
+    Args:
+        parent (tk.Widget): The parent Tkinter container frame.
+        set_judul_modul (Callable[[str], None]): Callback function to update the
+            active module title label in the application shell.
+    """
     global window, entry_map, entry_nama, entry_nomor, entry_alamat, entry_tipe, entry_ranting 
     global tree, entries, selected_id, entry_kode_member
     global entry_search, combo_tipe, combo_ranting
@@ -212,19 +253,29 @@ def buat_frame_member(parent, set_judul_modul):
     set_judul_modul(_("member.set_judul_modul"))
 
 def build_header(frame):
+    """Construct the top action header containing creation and import buttons.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+    """
     frame_header = tk.Frame(frame, bg="#f4f4f4")
     frame_header.pack(pady=10)
     tk.Button(frame_header, text=_("member.btn_tambah"), command=tambah_member_gui).pack(side=tk.LEFT, padx=6)
     tk.Button(frame_header, text=_("member.btn_import"), command=import_member_excel).pack(side=tk.LEFT, padx=6)
 
 def build_filter_area(frame):
+    """Construct the dropdown filtering bar for member type and branch categories.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+    """
     global combo_tipe, combo_ranting
         
     frame_filter = tk.Frame(frame, bg="#f4f4f4")
     frame_filter.pack(pady=10)
 
     all_member = semua_member()
-    # Ambil data unik
+
     tipe_values = sorted(set([d["tipe"] for d in all_member if d.get("tipe") not in [None, ""]]))
     if not tipe_values: tipe_values = ["(Tidak ada data)"]
 
@@ -234,23 +285,22 @@ def build_filter_area(frame):
         ]))
     if not ranting_values: ranting_values = ["(Tidak ada data)"]
 
-    # Dropdown Tipe
     tk.Label(frame_filter, text=_("member.lbl_filter_tipe")).pack(side='left')
     combo_tipe = ttk.Combobox(frame_filter, values=tipe_values)
     combo_tipe.pack(side='left', padx=5)
 
-    # Dropdown Ranting
     tk.Label(frame_filter, text=_("member.lbl_filter_ranting")).pack(side='left')
     combo_ranting = ttk.Combobox(frame_filter, values=ranting_values)
     combo_ranting.pack(side='left', padx=5)
 
-    # _______________ Filter Area
     def reset_filter():
+        """Clear combobox selections and reset the treeview to display all records."""
         combo_tipe.set("")
         combo_ranting.set("")
-        refresh_tree()  # Tampikan semua member
+        refresh_tree()
 
     def filter_data():
+        """Filter member records based on selected type and branch criteria."""
         tipe_selected = combo_tipe.get()
         ranting_selected = combo_ranting.get()
         hasil = [d for d in all_member if
@@ -267,6 +317,11 @@ def build_filter_area(frame):
     tk.Button(frame_filter, text="Filter", command=filter_data).pack(side='left', padx=5)
 
 def build_search_area(frame):
+    """Construct the keyword search panel for querying member records.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+    """
     global entry_search
 
     frame_search = tk.Frame(frame, bg="#f4f4f4")
@@ -277,6 +332,7 @@ def build_search_area(frame):
     entry_search.pack(side=tk.LEFT, padx=4)
 
     def cari_member_gui():
+        """Execute keyword search and update the treeview with matching results."""
         keyword = entry_search.get()
         if not keyword.strip():
             messagebox.showwarning(_("member.warr_kosong"), _("member.warr_kata_kunci"))
@@ -292,6 +348,11 @@ def build_search_area(frame):
     tk.Button(frame_search, text=_("member.cari"), command=lambda: cari_member_gui()).pack(side=tk.LEFT, padx=4)
 
 def build_treeview(frame):
+    """Construct the scrollable Treeview table displaying member data rows.
+
+    Args:
+        frame (tk.Frame): Parent container frame.
+    """
     global tree
    
     columns = ("id_member", "kode_member", "nama", "no_hp", "alamat", "tipe", "ranting", )
@@ -326,7 +387,11 @@ def build_treeview(frame):
     tree.bind("<<TreeviewSelect>>", on_tree_select)
 
 def build_footer(frame):
+    """Construct the bottom control bar containing edit and delete buttons.
 
+    Args:
+        frame (tk.Frame): Parent container frame.
+    """
     frame_footer = tk.Frame(frame, bg="#f4f4f4")
     frame_footer.pack(pady=10)
 
