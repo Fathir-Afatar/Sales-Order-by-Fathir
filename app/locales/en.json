@@ -1,9 +1,9 @@
 {
     "app_gui" : {
-        "app_title": "Smart POS by Fathir V2",
+        "app_title": "Sales Order by Fathir V2",
         "lbl_module": "Module",
         "menu_dashboard": "Main",
-        "msg_welcome": "Welcome to Smart POS by Fathir V2",
+        "msg_welcome": "Welcome to Sales Order by Fathir V2",
         "msg_select_module": "Please select a module from the menu on the left.",
         "nav_member": "Members",
         "nav_supplier": "Suppliers",

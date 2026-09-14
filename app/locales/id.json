@@ -1,9 +1,9 @@
 {
     "app_gui": {
-        "app_title": "POS Pintar by Fathir V2",
+        "app_title": "Sales Order by Fathir V2",
         "lbl_module": "Modul",
         "menu_dashboard": "Utama",
-        "msg_welcome": "Selamat Datang di POS Pintar by Fathir V2",
+        "msg_welcome": "Selamat Datang di Sales Order by Fathir V2",
         "msg_select_module": "Silakan Pilih modul dari menu di sebelah kiri.",
         "nav_member": "Member",
         "nav_supplier": "Supplier",
