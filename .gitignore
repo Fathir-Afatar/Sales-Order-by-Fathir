@@ -28,10 +28,12 @@ Thumbs.db
 
 # Folder python-escpos dari clone
 python-escpos/
+debug/
+test/
+hook/
 
 # IDE configs
 .vscode/
 .idea/
 
-*txt
 *csv
