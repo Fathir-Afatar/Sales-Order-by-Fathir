@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software or its associated research preprint, please cite it as below."
+authors:
+  - family-names: "Afatar"
+    given-names: "Fathir"
+title: "Sales Order by Fathir"
+version: 2.0.0
+date-released: 2026-10-14
+url: "https://github.com/Fathir-Afatar/Sales-Order-by-Fathir.git"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23392193"
